@@ -7,6 +7,7 @@ import { TabBar, type Tab } from './components/TabBar'
 import { HabitEditor } from './components/HabitEditor'
 import { SettingsSheet } from './components/SettingsSheet'
 import { formatLongJa } from './lib/date'
+import { useDayKey } from './lib/useDayKey'
 
 export default function App() {
   const api = useAppData()
@@ -15,12 +16,15 @@ export default function App() {
   const [showEditor, setShowEditor] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
 
+  const dayKey = useDayKey()
+
   const sortedHabits = useMemo(
     () => [...api.data.habits].sort((a, b) => a.order - b.order),
     [api.data.habits],
   )
 
-  const today = useMemo(() => formatLongJa(new Date()), [])
+  // dayKey が変わる（日付が変わる）と再計算され、日をまたいでも「今日」が更新される
+  const today = useMemo(() => formatLongJa(new Date()), [dayKey])
 
   function openNew() {
     setEditing(null)
@@ -70,6 +74,7 @@ export default function App() {
       {showEditor && (
         <HabitEditor
           habit={editing}
+          habits={sortedHabits}
           api={api}
           onClose={() => setShowEditor(false)}
         />

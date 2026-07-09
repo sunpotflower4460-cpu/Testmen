@@ -12,7 +12,7 @@ export function TabBar({ tab, onChange, onAdd }: Props) {
       <button
         className={'tabbar__item' + (tab === 'today' ? ' is-active' : '')}
         onClick={() => onChange('today')}
-        aria-current={tab === 'today'}
+        aria-current={tab === 'today' ? 'page' : undefined}
       >
         <span className="tabbar__icon" aria-hidden>㊡</span>
         <span className="tabbar__label">今日</span>
@@ -25,7 +25,7 @@ export function TabBar({ tab, onChange, onAdd }: Props) {
       <button
         className={'tabbar__item' + (tab === 'calendar' ? ' is-active' : '')}
         onClick={() => onChange('calendar')}
-        aria-current={tab === 'calendar'}
+        aria-current={tab === 'calendar' ? 'page' : undefined}
       >
         <span className="tabbar__icon" aria-hidden>📅</span>
         <span className="tabbar__label">カレンダー</span>

@@ -154,7 +154,7 @@ export function CalendarView({ habits, api, onAdd }: Props) {
                           style={{ '--ink': c.ink, '--tint': c.tint } as React.CSSProperties}
                           onClick={() => onCellClick(h, key)}
                           disabled={future}
-                          aria-label={`${h.title} ${d}日 ${done ? '達成済み' : '未達成'}`}
+                          aria-label={`${h.title} ${month0 + 1}月${d}日 ${done ? '達成済み' : '未達成'}`}
                           aria-pressed={done}
                         >
                           {done && <span className="cell__mark">{h.emoji}</span>}

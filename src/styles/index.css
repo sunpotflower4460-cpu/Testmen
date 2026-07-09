@@ -392,6 +392,45 @@ input {
 }
 
 /* ============================================================
+   クラッシュ画面（ErrorBoundary）
+   ============================================================ */
+.crash {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 32px 24px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.crash__stamp {
+  font-size: 60px;
+}
+.crash__title {
+  font-size: 20px;
+  font-weight: 800;
+}
+.crash__text {
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.crash__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 280px;
+}
+.crash__actions .btn {
+  width: 100%;
+}
+
+/* ============================================================
    タブバー
    ============================================================ */
 .tabbar {
@@ -534,6 +573,40 @@ input {
   font-size: 17px;
   font-weight: 800;
   color: color-mix(in srgb, var(--ink) 75%, var(--ink-text));
+}
+
+.editor__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.editor__stat {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  padding: 12px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.editor__stat strong {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink-text);
+}
+.editor__stat span {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.reorder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.reorder .btn {
+  width: 100%;
 }
 
 .field {

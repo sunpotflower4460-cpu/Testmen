@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { InkColor } from '../lib/types'
 import { useReducedMotion } from '../lib/useReducedMotion'
 import { playStamp, playUnstamp } from '../lib/sound'
@@ -73,6 +73,7 @@ export function StampButton({
   const reduced = useReducedMotion()
   const [pressing, setPressing] = useState(false)
   const [animKey, setAnimKey] = useState(0)
+  const [celebrate, setCelebrate] = useState(false)
   const [particles, setParticles] = useState<Particle[]>([])
   const clearTimer = useRef<number | null>(null)
 
@@ -83,15 +84,27 @@ export function StampButton({
     if (nowDone) {
       if (soundOn) playStamp()
       if (!reduced) {
+        // 波紋とパーティクルは「実際に押した瞬間」のみ。マウント時には出さない。
+        setCelebrate(true)
         setParticles(makeBurst())
         if (clearTimer.current) window.clearTimeout(clearTimer.current)
-        clearTimer.current = window.setTimeout(() => setParticles([]), 1100)
+        clearTimer.current = window.setTimeout(() => {
+          setParticles([])
+          setCelebrate(false)
+        }, 1100)
       }
     } else {
       if (soundOn) playUnstamp()
+      setCelebrate(false)
       setParticles([])
     }
   }, [disabled, onToggle, soundOn, reduced])
+
+  useEffect(() => {
+    return () => {
+      if (clearTimer.current) window.clearTimeout(clearTimer.current)
+    }
+  }, [])
 
   return (
     <button
@@ -122,11 +135,11 @@ export function StampButton({
         {/* インクの円環と芯 */}
         <span key={animKey} className={'stamp__face' + (done ? ' stamp__face--stamped' : '')}>
           <span className="stamp__ring" />
-          <span className="stamp__glyph">{done ? emoji : emoji}</span>
+          <span className="stamp__glyph">{emoji}</span>
           <span className="stamp__grain" aria-hidden />
         </span>
         {/* 押した瞬間の波紋 */}
-        {done && <span key={`r${animKey}`} className="stamp__ripple" aria-hidden />}
+        {celebrate && <span key={`r${animKey}`} className="stamp__ripple" aria-hidden />}
       </span>
 
       {/* パーティクル（飛沫・きらめき・舞う絵柄） */}

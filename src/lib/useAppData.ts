@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppData, Habit, Settings } from './types'
 import { loadData, saveData, uid } from './storage'
 import { DEFAULT_COLOR_ID } from './palette'
-import { todayKey } from './date'
 
 export interface HabitInput {
   title: string
@@ -26,6 +25,10 @@ export interface AppApi {
 
 export function useAppData(): AppApi {
   const [data, setData] = useState<AppData>(() => loadData())
+
+  // 常に最新のdataを指すref。イベントハンドラから同期的に現在値を参照するために使う。
+  const dataRef = useRef(data)
+  dataRef.current = data
 
   // 変更のたびに永続化
   const first = useRef(true)
@@ -95,16 +98,12 @@ export function useAppData(): AppApi {
   }, [])
 
   const toggleRecord = useCallback((habitId: string, dateKey: string): boolean => {
-    let nowDone = false
+    // 戻り値は現在値(ref)から決定論的に算出。updater内の副作用に依存しない。
+    const nowDone = !(dataRef.current.records[habitId] ?? []).includes(dateKey)
     setData((prev) => {
       const set = new Set(prev.records[habitId] ?? [])
-      if (set.has(dateKey)) {
-        set.delete(dateKey)
-        nowDone = false
-      } else {
-        set.add(dateKey)
-        nowDone = true
-      }
+      if (nowDone) set.add(dateKey)
+      else set.delete(dateKey)
       return {
         ...prev,
         records: { ...prev.records, [habitId]: Array.from(set).sort() },
@@ -128,9 +127,6 @@ export function useAppData(): AppApi {
   }, [])
 
   const replaceAll = useCallback((next: AppData) => setData(next), [])
-
-  // 日付が変わった時の再描画を促すため、今日のキーは参照だけ保持
-  useMemo(() => todayKey(), [])
 
   return {
     data,
