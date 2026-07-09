@@ -29,6 +29,22 @@
 - `vite.config.ts` の `base: './'` により、`*.pages.dev` でもサブパス配信でも正しく動作します。
 - ルーティングは単一ページ（URL遷移なし）のため、SPA フォールバック設定は不要です。
 
+## Workers（Workers Builds）で公開する場合
+
+「Create → Import a repository」から **Worker** として取り込んだ場合は、
+リポジトリ直下の `wrangler.toml` で `dist/` を静的アセットとして配信します（サーバーコード不要）。
+
+Worker のプロジェクト設定（**Settings → Build**）で次を確認してください：
+
+| 項目 | 値 |
+|---|---|
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy`（既定のまま） |
+
+これで `wrangler.toml` の `[assets] directory = "./dist"` が配信対象になり、
+デプロイ成功後に `testmen.<サブドメイン>.workers.dev` が有効になります。
+URL が出ない場合は **Settings → Domains & Routes** で `workers.dev` を有効化してください。
+
 ## 手動デプロイ（任意）
 
 CI を使わずローカルから公開したい場合：
