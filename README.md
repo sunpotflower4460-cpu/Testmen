@@ -26,6 +26,11 @@ npm run build    # 本番ビルド（dist/ に出力）
 npm run preview  # ビルド結果をプレビュー
 ```
 
+## デプロイ
+
+Cloudflare Pages の GitHub 連携でそのまま公開できます（トークン不要・push で自動デプロイ）。
+手順は [DEPLOY.md](./DEPLOY.md) を参照してください。
+
 ## 技術構成
 
 - **React + TypeScript + Vite**
