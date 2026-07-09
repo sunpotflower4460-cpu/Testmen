@@ -1,0 +1,209 @@
+/* ============================================================
+   スタンプボタン — アプリの主役
+   ハンコを和紙に「トン」と押す体験を、ばね・回転ブレ・
+   波紋・インク飛沫で表現する。
+   ============================================================ */
+.stamp {
+  --size: 128px;
+  width: var(--size);
+  height: var(--size);
+  position: relative;
+  display: grid;
+  place-items: center;
+  touch-action: manipulation;
+  isolation: isolate;
+}
+
+/* 押し込みで沈む土台 */
+.stamp__base {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  transition: transform 0.09s ease;
+}
+.stamp.is-pressing .stamp__base {
+  transform: scale(0.9) translateY(4px);
+}
+
+/* ハンコの面 */
+.stamp__face {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  grid-area: 1 / 1;
+}
+
+/* 未押印：うっすらしたガイド */
+.stamp:not(.is-done) .stamp__face {
+  background:
+    repeating-conic-gradient(var(--tint) 0 8deg, transparent 8deg 16deg);
+  background-blend-mode: multiply;
+}
+.stamp:not(.is-done) .stamp__ring {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--ink) 40%, #cbc0ae);
+  opacity: 0.7;
+}
+.stamp:not(.is-done) .stamp__glyph {
+  color: color-mix(in srgb, var(--ink) 35%, #b7ac9a);
+  opacity: 0.55;
+}
+
+/* 輪郭リング */
+.stamp__ring {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 5px solid var(--ink);
+  box-sizing: border-box;
+}
+
+/* 中央の絵柄 */
+.stamp__glyph {
+  font-size: calc(var(--size) * 0.4);
+  line-height: 1;
+  color: var(--ink);
+  position: relative;
+  z-index: 1;
+  user-select: none;
+}
+
+/* インクのムラ（押印時のみ薄く重なる） */
+.stamp__grain {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.55) 0 8%, transparent 9%),
+    radial-gradient(circle at 70% 40%, rgba(255, 255, 255, 0.4) 0 6%, transparent 7%),
+    radial-gradient(circle at 55% 75%, rgba(255, 255, 255, 0.45) 0 7%, transparent 8%),
+    radial-gradient(circle at 20% 65%, rgba(255, 255, 255, 0.35) 0 5%, transparent 6%);
+  mix-blend-mode: screen;
+}
+
+/* 押印済みの見た目：インクが乗り、少し傾く */
+.stamp.is-done .stamp__face {
+  background: var(--tint);
+}
+.stamp.is-done .stamp__ring {
+  border-style: solid;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 50%, transparent);
+}
+.stamp.is-done .stamp__grain {
+  opacity: 0.9;
+}
+
+/* 押した瞬間のスラム（ばねの効いた着地＋回転ブレ） */
+.stamp.is-done .stamp__face--stamped {
+  animation: stamp-slam 0.62s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes stamp-slam {
+  0% {
+    transform: translateY(-16px) scale(1.42) rotate(-14deg);
+    opacity: 0;
+    filter: blur(1px);
+  }
+  45% {
+    transform: translateY(2px) scale(0.88) rotate(5deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+  62% {
+    transform: translateY(0) scale(1.07) rotate(-3deg);
+  }
+  78% {
+    transform: scale(0.97) rotate(1deg);
+  }
+  100% {
+    transform: scale(1) rotate(-3.5deg);
+  }
+}
+
+/* 押印済み定常状態も少しだけ傾けて手押し感を残す */
+.stamp.is-done .stamp__face {
+  transform: rotate(-3.5deg);
+}
+
+/* 波紋リング */
+.stamp__ripple {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  grid-area: 1 / 1;
+  pointer-events: none;
+  animation: stamp-ripple 0.7s ease-out both;
+  z-index: 0;
+}
+@keyframes stamp-ripple {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+   パーティクル（飛沫・きらめき・舞う絵柄）
+   ============================================================ */
+.stamp__burst {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 3;
+}
+.particle {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  animation: particle-fly 0.85s cubic-bezier(0.15, 0.75, 0.3, 1) both;
+  animation-delay: var(--delay);
+  will-change: transform, opacity;
+}
+.particle--ink {
+  width: 10px;
+  height: 10px;
+  background: var(--ink);
+  border-radius: 46% 54% 52% 48%;
+}
+.particle--spark {
+  color: #f0b34a;
+  font-size: 15px;
+  text-shadow: 0 0 4px rgba(240, 179, 74, 0.6);
+}
+.particle--emoji {
+  font-size: 22px;
+}
+@keyframes particle-fly {
+  0% {
+    transform: translate(0, 0) scale(0.2) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(var(--sc)) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+.stamp.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
