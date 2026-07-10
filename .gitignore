@@ -7,3 +7,11 @@ dist-ssr
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Capacitor / iOS（Macで生成される成果物）
+ios/App/Pods
+ios/App/App/public
+ios/App/Podfile.lock
+DerivedData
+*.xcuserstate
+.cxx
