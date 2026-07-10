@@ -2,16 +2,45 @@ import { useRef, useState } from 'react'
 import type { AppApi } from '../lib/useAppData'
 import { Sheet } from './Sheet'
 import { exportData, parseImport } from '../lib/storage'
+import { usePremium } from '../lib/usePremium'
+import {
+  URL_PRIVACY,
+  URL_TERMS,
+  CONTACT_EMAIL,
+  APP_STORE_ID,
+  APP_VERSION,
+} from '../lib/config'
 
 interface Props {
   api: AppApi
   onClose: () => void
+  onUpgrade: () => void
 }
 
-export function SettingsSheet({ api, onClose }: Props) {
+export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   const { settings } = api.data
+  const { premium, restore } = usePremium()
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<string | null>(null)
+
+  async function doRestore() {
+    const ok = await restore()
+    setMsg(ok ? '購入を復元しました' : '復元できる購入が見つかりませんでした')
+  }
+
+  function contact() {
+    const subject = encodeURIComponent('スタンプ習慣 お問い合わせ')
+    const body = encodeURIComponent(`\n\n---\nバージョン: ${APP_VERSION}`)
+    location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`
+  }
+
+  function rate() {
+    if (!APP_STORE_ID) {
+      setMsg('公開後にレビューできるようになります')
+      return
+    }
+    location.href = `https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`
+  }
 
   function doExport() {
     const text = exportData(api.data)
@@ -61,6 +90,26 @@ export function SettingsSheet({ api, onClose }: Props) {
           </div>
         </div>
 
+        {/* プレミアム */}
+        {premium ? (
+          <div className="premium-card premium-card--owned">
+            <span className="premium-card__badge" aria-hidden>✨</span>
+            <div className="premium-card__text">
+              <strong>プレミアム有効</strong>
+              <span>広告は非表示です。応援ありがとうございます！</span>
+            </div>
+          </div>
+        ) : (
+          <button className="premium-card" onClick={onUpgrade}>
+            <span className="premium-card__badge" aria-hidden>✨</span>
+            <div className="premium-card__text">
+              <strong>広告を消す（プレミアム）</strong>
+              <span>買い切りで、ずっと広告なしに</span>
+            </div>
+            <span className="premium-card__chev" aria-hidden>›</span>
+          </button>
+        )}
+
         <label className="toggle">
           <div className="toggle__text">
             <span className="toggle__label">効果音</span>
@@ -97,9 +146,38 @@ export function SettingsSheet({ api, onClose }: Props) {
           </div>
         </div>
 
+        {/* 情報・サポート */}
+        <div className="settings__group">
+          <span className="settings__group-title">情報・サポート</span>
+          <div className="settings__links">
+            {!premium && (
+              <button className="linkrow" onClick={doRestore}>
+                <span>購入を復元</span>
+                <span className="linkrow__chev" aria-hidden>›</span>
+              </button>
+            )}
+            <button className="linkrow" onClick={rate}>
+              <span>アプリを評価する</span>
+              <span className="linkrow__chev" aria-hidden>›</span>
+            </button>
+            <button className="linkrow" onClick={contact}>
+              <span>お問い合わせ</span>
+              <span className="linkrow__chev" aria-hidden>›</span>
+            </button>
+            <a className="linkrow" href={URL_TERMS} target="_blank" rel="noreferrer">
+              <span>利用規約</span>
+              <span className="linkrow__chev" aria-hidden>›</span>
+            </a>
+            <a className="linkrow" href={URL_PRIVACY} target="_blank" rel="noreferrer">
+              <span>プライバシーポリシー</span>
+              <span className="linkrow__chev" aria-hidden>›</span>
+            </a>
+          </div>
+        </div>
+
         {msg && <p className="settings__msg" role="status">{msg}</p>}
 
-        <p className="settings__version">スタンプ習慣 v1.0</p>
+        <p className="settings__version">スタンプ習慣 v{APP_VERSION}</p>
       </div>
     </Sheet>
   )

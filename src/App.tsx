@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAppData } from './lib/useAppData'
 import type { Habit } from './lib/types'
 import { TodayView } from './components/TodayView'
@@ -6,8 +6,12 @@ import { CalendarView } from './components/CalendarView'
 import { TabBar, type Tab } from './components/TabBar'
 import { HabitEditor } from './components/HabitEditor'
 import { SettingsSheet } from './components/SettingsSheet'
+import { AdBanner } from './components/AdBanner'
+import { Paywall } from './components/Paywall'
 import { formatLongJa } from './lib/date'
 import { useDayKey } from './lib/useDayKey'
+import { initAds } from './lib/ads'
+import { nativeBootstrap } from './lib/nativeBootstrap'
 
 export default function App() {
   const api = useAppData()
@@ -15,8 +19,15 @@ export default function App() {
   const [editing, setEditing] = useState<Habit | null>(null)
   const [showEditor, setShowEditor] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showPaywall, setShowPaywall] = useState(false)
 
   const dayKey = useDayKey()
+
+  // ネイティブでは起動時の調整と AdMob 初期化（Webは何もしない）
+  useEffect(() => {
+    nativeBootstrap()
+    initAds()
+  }, [])
 
   const sortedHabits = useMemo(
     () => [...api.data.habits].sort((a, b) => a.order - b.order),
@@ -69,6 +80,8 @@ export default function App() {
         )}
       </main>
 
+      <AdBanner onUpgrade={() => setShowPaywall(true)} />
+
       <TabBar tab={tab} onChange={setTab} onAdd={openNew} />
 
       {showEditor && (
@@ -81,8 +94,17 @@ export default function App() {
       )}
 
       {showSettings && (
-        <SettingsSheet api={api} onClose={() => setShowSettings(false)} />
+        <SettingsSheet
+          api={api}
+          onClose={() => setShowSettings(false)}
+          onUpgrade={() => {
+            setShowSettings(false)
+            setShowPaywall(true)
+          }}
+        />
       )}
+
+      {showPaywall && <Paywall onClose={() => setShowPaywall(false)} />}
     </div>
   )
 }
