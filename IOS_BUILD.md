@@ -1,131 +1,77 @@
-# iOS アプリ化 & App Store 申請ガイド（Mac作業）
+# iOS ビルド & App Store 申請ガイド（残り＝手動作業のみ）
 
-このアプリは **Capacitor** で iOS ネイティブアプリとして書き出せます。以下は **Mac** での作業手順です。
-（Web版・広告・課金のコードはすべて実装済み。ここでは実機ビルドと各サービスの接続を行います）
+自動化できる部分は**すべて実施済み**です。このリポジトリには次が含まれています：
 
-> 記号の意味： 🖥 = Macでのコマンド ／ ⚙️ = 設定値の入力 ／ 🍎 = Apple/各サービスのサイト作業
+- ✅ iOS ネイティブプロジェクト `ios/`（生成済み・Swift Package Manager 構成＝`pod install` 不要）
+- ✅ `Info.plist`：ATT文言・AdMob ID枠・SKAdNetwork・向き固定・輸出コンプライアンス自動回答
+- ✅ `ios/App/App/PrivacyInfo.xcprivacy`（Xcodeプロジェクトに登録済み）
+- ✅ アプリアイコン（1024, 透過なし）・スプラッシュ画像
+- ✅ App Store スクリーンショット 4枚（6.7", 1290×2796）`fastlane/screenshots/ja/`
+- ✅ ストア説明文・メタデータ `fastlane/metadata/`（自動アップロード可）
+- ✅ 広告(AdMob)・課金(RevenueCat)のコード実装
 
----
-
-## 0. 事前準備
-
-- Xcode（Mac App Store から）＋ コマンドラインツール
-- CocoaPods： `sudo gem install cocoapods`
-- Node.js 20 以上
-- Apple Developer Program 登録（年 $99）
-- Google AdMob アカウント（広告）／ RevenueCat アカウント（課金・無料枠あり）
+残っているのは、**あなたのアカウント/鍵が必要な手動作業だけ**です（下記）。
 
 ---
 
-## 1. iOS プロジェクトを生成する
+## 手動作業チェックリスト
 
+### A. 手元で開く（Mac）
 ```bash
-# 依存インストール & Webビルド
 npm install
 npm run build
-
-# iOS プラットフォームを追加（初回のみ）
-npx cap add ios
-
-# Webビルドをネイティブへ同期（ビルドのたびに実行）
-npx cap sync ios
+npx cap sync ios     # ← ios/ は生成済み。add は不要
+npx cap open ios     # Xcode が開く（初回はSPM解決に少し時間がかかります）
 ```
 
-> 以降、**Web側を変更したら毎回** `npm run build && npx cap sync ios` を実行してください。
+### B. 署名（Xcode）
+- **Signing & Capabilities → Team** に自分の Apple Developer チームを設定
+- Bundle ID は `com.sunpotflower.stamphabit`（変えたい場合は `capacitor.config.ts`・Xcode・`fastlane/Appfile` を揃える）
+
+### C. 広告（AdMob）— 実IDに差し替え 🍎
+1. [AdMob](https://apps.admob.com/) でアプリ＋バナー広告ユニットを作成
+2. `src/lib/config.ts` の `ADMOB_BANNER_IOS` に**バナー広告ユニットID**
+3. `ios/App/App/Info.plist` の `GADApplicationIdentifier` を**自分のAdMobアプリID**へ
+   （現在は Google のテストIDが入っています）
+4. `npm run build && npx cap sync ios`
+
+### D. 課金（RevenueCat + App Store Connect）🍎
+1. App Store Connect：**App内課金（非消費型）** `remove_ads` を ¥300 で作成
+2. RevenueCat：Entitlement `premium` に `remove_ads` を紐付け、Offering(current) に追加、**Public API key(Apple)** を取得
+3. `src/lib/config.ts` の `REVENUECAT_IOS_API_KEY` を設定 → `npm run build && npx cap sync ios`
+   （`ENTITLEMENT_PREMIUM` / `PRODUCT_REMOVE_ADS` は既定値のままRevenueCat/ASCと一致させればOK）
+
+### E. 公開URLの反映
+- Cloudflare の公開URLに合わせて更新：
+  - `src/lib/config.ts` の `URL_PRIVACY` / `URL_TERMS`
+  - `fastlane/metadata/ja/privacy_url.txt` / `support_url.txt` / `marketing_url.txt`
+
+### F. ストア情報の登録
+- 手入力する場合：`APPSTORE_METADATA.md` の内容をコピペ
+- 自動アップロードする場合（Mac）：
+  ```bash
+  bundle install            # 初回のみ（Gemfile）
+  bundle exec fastlane upload_metadata   # 説明文＋スクショをASCへ
+  ```
+  ※ 事前に App Store Connect で同じ Bundle ID のアプリを作成しておくこと
+
+### G. ビルド → 申請
+- Xcode：**Product → Archive → Distribute App → App Store Connect → Upload**
+  - または `bundle exec fastlane release`（署名設定済みが前提）
+- App Store Connect で **App本体＋App内課金 `remove_ads` を同時に審査提出**
+- App Privacy（データ収集）の設問は `APPSTORE_METADATA.md` の通りに回答
 
 ---
 
-## 2. アイコン・スプラッシュ
-
-`assets/icon.svg` を元に 1024×1024 の PNG（`assets/icon.png`）を用意し、次を実行：
-
-```bash
-npm install -D @capacitor/assets   # Macではsharpが正常に入ります
-npx @capacitor/assets generate --ios
-```
-
-（手動で行う場合は Xcode の `App/Assets.xcassets` にアイコンを設定してもOK）
-
----
-
-## 3. Xcode で署名・基本設定
-
-```bash
-npx cap open ios
-```
-
-Xcode の **Signing & Capabilities** で：
-- **Team**：自分の Apple Developer チームを選択
-- **Bundle Identifier**：`capacitor.config.ts` の `appId`（例 `com.sunpotflower.stamphabit`）と一致させる
-- **Display Name**：スタンプ習慣
-- **Version / Build**：`1.0.0 / 1`
-
----
-
-## 4. 広告（AdMob）の接続
-
-1. 🍎 [AdMob](https://apps.admob.com/) でアプリを登録し、**バナー広告ユニット**を作成
-2. ⚙️ `src/lib/config.ts` の `ADMOB_BANNER_IOS` に本番の広告ユニットIDを設定
-   （空のままだと Google のテスト広告が表示されます）
-3. ⚙️ `ios/App/App/Info.plist` に以下を追加：
-   - `GADApplicationIdentifier`（String）= AdMob の **アプリID**（`ca-app-pub-XXXX~XXXX`）
-   - `NSUserTrackingUsageDescription`（String）= 例：「広告を最適化するために使用します」
-   - `SKAdNetworkItems`：Google 提供の SKAdNetwork ID 一覧（AdMob ドキュメント参照）
-4. 🖥 `npx cap sync ios`（プラグインの Pod が入ります）
-
-> ATT（トラッキング許可）ダイアログはアプリ起動時に自動で出ます（`initAds` 内で要求）。
-
----
-
-## 5. 課金（RevenueCat + App Store Connect）
-
-**App Store Connect 側** 🍎
-1. アプリを作成（Bundle ID を一致）
-2. **App内課金 → 非消費型**を作成：Product ID = `remove_ads`、価格 = **¥300 のティア**
-3. 審査提出用のメタデータ（表示名・説明）を入力
-
-**RevenueCat 側** 🍎
-1. プロジェクト作成 → Apple アプリを追加（App Store Connect の共有シークレットを登録）
-2. **Entitlement** を作成：識別子 `premium`
-3. **Product** に `remove_ads` を追加 → **Offering（current）** に紐付け
-4. **Public API key（Apple）** を取得
-
-**コード側** ⚙️（`src/lib/config.ts`）
-```ts
-export const REVENUECAT_IOS_API_KEY = 'appl_xxxxxxxx' // ← 貼り付け
-export const ENTITLEMENT_PREMIUM   = 'premium'        // RevenueCatと一致
-export const PRODUCT_REMOVE_ADS    = 'remove_ads'     // App Store Connectと一致
-```
-→ 🖥 `npm run build && npx cap sync ios`
-
-> テストは Sandbox（App Store Connect の Sandbox テスターアカウント）で行えます。
-
----
-
-## 6. 法務・情報
-
-- `public/privacy.html` / `public/terms.html` は Cloudflare で公開済みのURLに差し替え推奨
-  （`src/lib/config.ts` の `URL_PRIVACY` / `URL_TERMS`）
-- App Store Connect の **プライバシー（データ収集）** 設問では、広告(AdMob)による
-  「識別子」「使用状況データ」の収集を申告してください。
-
----
-
-## 7. ビルド → 申請
-
-1. Xcode で実機/シミュレータ動作確認
-2. **Product → Archive**
-3. **Distribute App → App Store Connect → Upload**
-4. App Store Connect で **TestFlight** 確認 → スクリーンショット等を揃えて **審査へ提出**
-   - アプリ本体と **App内課金 `remove_ads` を同時に審査提出**するのを忘れずに
-
----
+## 補足
+- **Web を変更したら**：`npm run build && npx cap sync ios`（毎回）
+- `PrivacyInfo.xcprivacy` は登録済みですが、Xcode で対象ターゲットに含まれているか一度ご確認ください
+- スクリーンショットの他サイズが必要になったら、開発時に生成スクリプトで追加できます（履歴参照）
 
 ## よくあるつまずき
-
 | 症状 | 対処 |
 |---|---|
-| 広告が出ない | 最初はテストIDで確認。実IDは審査通過後に反映されることがある |
-| 課金ボタンで商品が取れない | App Store Connect の契約(有料App)・税務/銀行情報が未完了だと取得不可 |
-| ビルド時 Pod エラー | `cd ios/App && pod install` を手動実行 |
+| 広告が出ない | まずはテストIDで確認。実IDは審査/反映まで時間差あり |
+| 課金で商品が取得できない | ASC の有料App契約・税務/銀行情報が未完了だと取得不可 |
+| SPM解決に失敗 | Xcode の File → Packages → Reset Package Caches |
 | Web変更が反映されない | `npm run build && npx cap sync ios` を再実行 |

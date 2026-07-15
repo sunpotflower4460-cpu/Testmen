@@ -1,0 +1,6 @@
+app_identifier("com.sunpotflower.stamphabit") # capacitor.config.ts / Xcode の Bundle ID と一致
+apple_id("sunpotflower4460@gmail.com")         # App Store Connect のログインApple ID
+
+# 自分のチームIDに合わせて設定（App Store Connect / Developer Portal で確認）
+# itc_team_id("XXXXXXXX")   # App Store Connect の Team ID
+# team_id("XXXXXXXXXX")     # Developer Portal の Team ID

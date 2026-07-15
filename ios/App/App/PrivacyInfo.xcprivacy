@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 広告(AdMob)によるトラッキングを行うため true。実際のトラッキングドメインは
+	     各SDK同梱のプライバシーマニフェストで宣言されます。 -->
+	<key>NSPrivacyTracking</key>
+	<true/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<!-- アプリ自体が直接収集するデータ種別はありません（記録は端末内のみ）。
+	     広告・課金SDKの収集は各SDKのマニフェストで宣言されます。 -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<!-- Required Reason API：設定の保存等で UserDefaults を利用 -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
