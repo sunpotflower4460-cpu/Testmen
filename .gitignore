@@ -15,3 +15,15 @@ ios/App/Podfile.lock
 DerivedData
 *.xcuserstate
 .cxx
+ios/App/build
+ios/App/output
+
+# fastlane（生成物。スクショ/メタデータ本体は追跡する）
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output
+*.ipa
+*.app.dSYM.zip
+_gen_*.mjs
+_verify*.mjs
+_shot*.mjs
