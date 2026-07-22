@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { Habit } from '../lib/types'
 import type { AppApi } from '../lib/useAppData'
 import { getColor } from '../lib/palette'
@@ -23,45 +23,49 @@ export function CalendarView({ habits, api, onAdd }: Props) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month0, setMonth0] = useState(now.getMonth())
+  const lastToggle = useRef<{ key: string; at: number } | null>(null)
 
   const dayKeys = useMemo(() => monthDayKeys(year, month0), [year, month0])
-
   const monthCounts = useMemo(() => {
     const map: Record<string, number> = {}
-    for (const h of habits) {
-      const set = api.doneSet(h.id)
-      map[h.id] = dayKeys.filter((k) => set.has(k)).length
+    for (const habit of habits) {
+      const done = api.doneSet(habit.id)
+      map[habit.id] = dayKeys.filter((key) => done.has(key)).length
     }
     return map
   }, [habits, api, dayKeys])
 
   function shiftMonth(delta: number) {
-    let m = month0 + delta
-    let y = year
-    if (m < 0) {
-      m = 11
-      y--
-    } else if (m > 11) {
-      m = 0
-      y++
+    let nextMonth = month0 + delta
+    let nextYear = year
+    if (nextMonth < 0) {
+      nextMonth = 11
+      nextYear--
+    } else if (nextMonth > 11) {
+      nextMonth = 0
+      nextYear++
     }
-    setYear(y)
-    setMonth0(m)
+    setYear(nextYear)
+    setMonth0(nextMonth)
   }
 
   function goToday() {
-    const t = new Date()
-    setYear(t.getFullYear())
-    setMonth0(t.getMonth())
+    const today = new Date()
+    setYear(today.getFullYear())
+    setMonth0(today.getMonth())
   }
 
   function onCellClick(habit: Habit, key: string) {
     if (isFuture(key)) return
+
+    const inputKey = `${habit.id}:${key}`
+    const timestamp = Date.now()
+    if (lastToggle.current?.key === inputKey && timestamp - lastToggle.current.at < 180) return
+    lastToggle.current = { key: inputKey, at: timestamp }
+
     const nowDone = !api.isDone(habit.id, key)
     api.toggleRecord(habit.id, key)
-    if (api.data.settings.sound) {
-      nowDone ? playStamp() : playUnstamp()
-    }
+    if (api.data.settings.sound) nowDone ? playStamp() : playUnstamp()
   }
 
   const isCurrentMonth = year === now.getFullYear() && month0 === now.getMonth()
@@ -72,9 +76,7 @@ export function CalendarView({ habits, api, onAdd }: Props) {
         <div className="empty__stamp" aria-hidden>📅</div>
         <h2 className="empty__title">記録するタイトルがありません</h2>
         <p className="empty__text">まずは継続したいことを登録しましょう。</p>
-        <button className="btn btn--primary btn--lg" onClick={onAdd}>
-          ＋ タイトルを作る
-        </button>
+        <button className="btn btn--primary btn--lg" onClick={onAdd}>＋ タイトルを作る</button>
       </div>
     )
   }
@@ -97,12 +99,12 @@ export function CalendarView({ habits, api, onAdd }: Props) {
           <thead>
             <tr>
               <th className="grid__corner">日付</th>
-              {habits.map((h) => {
-                const c = getColor(h.colorId)
+              {habits.map((habit) => {
+                const color = getColor(habit.colorId)
                 return (
-                  <th key={h.id} className="grid__habit" style={{ '--ink': c.ink, '--tint': c.tint } as React.CSSProperties} title={h.title}>
-                    <span className="grid__habit-emoji">{h.emoji}</span>
-                    <span className="grid__habit-title">{h.title}</span>
+                  <th key={habit.id} className="grid__habit" style={{ '--ink': color.ink, '--tint': color.tint } as React.CSSProperties} title={habit.title}>
+                    <span className="grid__habit-emoji">{habit.emoji}</span>
+                    <span className="grid__habit-title">{habit.title}</span>
                   </th>
                 )
               })}
@@ -110,31 +112,31 @@ export function CalendarView({ habits, api, onAdd }: Props) {
           </thead>
           <tbody>
             {dayKeys.map((key) => {
-              const dow = weekdayOf(key)
-              const d = fromKey(key).getDate()
+              const weekday = weekdayOf(key)
+              const day = fromKey(key).getDate()
               const today = isToday(key)
               const future = isFuture(key)
               return (
-                <tr key={key} className={'grid__row' + (today ? ' grid__row--today' : '') + (dow === 0 ? ' grid__row--sun' : '') + (dow === 6 ? ' grid__row--sat' : '')}>
+                <tr key={key} className={'grid__row' + (today ? ' grid__row--today' : '') + (weekday === 0 ? ' grid__row--sun' : '') + (weekday === 6 ? ' grid__row--sat' : '')}>
                   <th className="grid__date" scope="row">
-                    <span className="grid__date-num">{d}</span>
-                    <span className="grid__date-dow">{weekdayLabel(dow)}</span>
+                    <span className="grid__date-num">{day}</span>
+                    <span className="grid__date-dow">{weekdayLabel(weekday)}</span>
                   </th>
-                  {habits.map((h) => {
-                    const c = getColor(h.colorId)
-                    const done = api.isDone(h.id, key)
+                  {habits.map((habit) => {
+                    const color = getColor(habit.colorId)
+                    const done = api.isDone(habit.id, key)
                     return (
-                      <td key={h.id} className="grid__cell">
+                      <td key={habit.id} className="grid__cell">
                         <button
                           type="button"
                           className={'cell' + (done ? ' cell--done' : '') + (future ? ' cell--future' : '')}
-                          style={{ '--ink': c.ink, '--tint': c.tint } as React.CSSProperties}
-                          onClick={() => onCellClick(h, key)}
+                          style={{ '--ink': color.ink, '--tint': color.tint } as React.CSSProperties}
+                          onClick={() => onCellClick(habit, key)}
                           disabled={future}
-                          aria-label={`${h.title} ${month0 + 1}月${d}日 ${done ? '達成済み' : '未達成'}`}
+                          aria-label={`${habit.title} ${month0 + 1}月${day}日 ${done ? '達成済み' : '未達成'}`}
                           aria-pressed={done}
                         >
-                          {done && <span className="cell__mark">{h.emoji}</span>}
+                          {done && <span className="cell__mark">{habit.emoji}</span>}
                         </button>
                       </td>
                     )
@@ -146,8 +148,8 @@ export function CalendarView({ habits, api, onAdd }: Props) {
           <tfoot>
             <tr>
               <th className="grid__corner grid__corner--foot">計</th>
-              {habits.map((h) => (
-                <td key={h.id} className="grid__total">{monthCounts[h.id]}<small>日</small></td>
+              {habits.map((habit) => (
+                <td key={habit.id} className="grid__total">{monthCounts[habit.id]}<small>日</small></td>
               ))}
             </tr>
           </tfoot>

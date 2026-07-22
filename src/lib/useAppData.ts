@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { AppData, Habit, Settings } from './types'
 import { loadData, saveData, uid } from './storage'
 import { DEFAULT_COLOR_ID } from './palette'
@@ -25,20 +25,22 @@ export interface AppApi {
 
 export function useAppData(): AppApi {
   const [data, setData] = useState<AppData>(() => loadData())
+  const dataRef = useRef(data)
 
-  const first = useRef(true)
-  useEffect(() => {
-    if (first.current) {
-      first.current = false
-      return
-    }
-    saveData(data)
-  }, [data])
+  const commitData = useCallback((update: (previous: AppData) => AppData) => {
+    const previous = dataRef.current
+    const next = update(previous)
+    if (next === previous) return
+
+    dataRef.current = next
+    if (!saveData(next)) console.warn('Failed to persist app data')
+    setData(next)
+  }, [])
 
   const addHabit = useCallback((input: HabitInput) => {
-    setData((prev) => {
-      const order = prev.habits.length
-        ? Math.max(...prev.habits.map((h) => h.order)) + 1
+    commitData((previous) => {
+      const order = previous.habits.length
+        ? Math.max(...previous.habits.map((habit) => habit.order)) + 1
         : 0
       const habit: Habit = {
         id: uid(),
@@ -48,56 +50,62 @@ export function useAppData(): AppApi {
         createdAt: new Date().toISOString(),
         order,
       }
-      return { ...prev, habits: [...prev.habits, habit] }
+      return { ...previous, habits: [...previous.habits, habit] }
     })
-  }, [])
+  }, [commitData])
 
   const updateHabit = useCallback((id: string, input: HabitInput) => {
-    setData((prev) => ({
-      ...prev,
-      habits: prev.habits.map((h) =>
-        h.id === id
-          ? { ...h, title: input.title.trim() || h.title, emoji: input.emoji, colorId: input.colorId }
-          : h,
+    commitData((previous) => ({
+      ...previous,
+      habits: previous.habits.map((habit) =>
+        habit.id === id
+          ? {
+              ...habit,
+              title: input.title.trim() || habit.title,
+              emoji: input.emoji,
+              colorId: input.colorId,
+            }
+          : habit,
       ),
     }))
-  }, [])
+  }, [commitData])
 
   const deleteHabit = useCallback((id: string) => {
-    setData((prev) => {
-      const records = { ...prev.records }
+    commitData((previous) => {
+      const records = { ...previous.records }
       delete records[id]
       return {
-        ...prev,
-        habits: prev.habits.filter((h) => h.id !== id),
+        ...previous,
+        habits: previous.habits.filter((habit) => habit.id !== id),
         records,
       }
     })
-  }, [])
+  }, [commitData])
 
-  const moveHabit = useCallback((id: string, dir: -1 | 1) => {
-    setData((prev) => {
-      const sorted = [...prev.habits].sort((a, b) => a.order - b.order)
-      const idx = sorted.findIndex((h) => h.id === id)
-      const swap = idx + dir
-      if (idx < 0 || swap < 0 || swap >= sorted.length) return prev
-      const a = sorted[idx]
-      const b = sorted[swap]
-      const habits = prev.habits.map((h) => {
-        if (h.id === a.id) return { ...h, order: b.order }
-        if (h.id === b.id) return { ...h, order: a.order }
-        return h
+  const moveHabit = useCallback((id: string, direction: -1 | 1) => {
+    commitData((previous) => {
+      const sorted = [...previous.habits].sort((a, b) => a.order - b.order)
+      const index = sorted.findIndex((habit) => habit.id === id)
+      const swapIndex = index + direction
+      if (index < 0 || swapIndex < 0 || swapIndex >= sorted.length) return previous
+
+      const current = sorted[index]
+      const adjacent = sorted[swapIndex]
+      const habits = previous.habits.map((habit) => {
+        if (habit.id === current.id) return { ...habit, order: adjacent.order }
+        if (habit.id === adjacent.id) return { ...habit, order: current.order }
+        return habit
       })
-      return { ...prev, habits }
+      return { ...previous, habits }
     })
-  }, [])
+  }, [commitData])
 
   const toggleRecord = useCallback((habitId: string, dateKey: string) => {
-    setData((prev) => ({
-      ...prev,
-      records: toggleRecordDate(prev.records, habitId, dateKey).records,
+    commitData((previous) => ({
+      ...previous,
+      records: toggleRecordDate(previous.records, habitId, dateKey).records,
     }))
-  }, [])
+  }, [commitData])
 
   const isDone = useCallback(
     (habitId: string, dateKey: string) => (data.records[habitId] ?? []).includes(dateKey),
@@ -110,10 +118,15 @@ export function useAppData(): AppApi {
   )
 
   const setSettings = useCallback((patch: Partial<Settings>) => {
-    setData((prev) => ({ ...prev, settings: { ...prev.settings, ...patch } }))
-  }, [])
+    commitData((previous) => ({
+      ...previous,
+      settings: { ...previous.settings, ...patch },
+    }))
+  }, [commitData])
 
-  const replaceAll = useCallback((next: AppData) => setData(next), [])
+  const replaceAll = useCallback((next: AppData) => {
+    commitData(() => next)
+  }, [commitData])
 
   return {
     data,

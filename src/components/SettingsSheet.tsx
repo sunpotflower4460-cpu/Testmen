@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { AppApi } from '../lib/useAppData'
 import { Sheet } from './Sheet'
 import { exportData, parseImport } from '../lib/storage'
+import { toKey } from '../lib/date'
 import { usePremium } from '../lib/usePremium'
 import { getAdPrivacyState, hideBanner, showAdPrivacyOptions, showBanner } from '../lib/ads'
 import {
@@ -18,12 +19,16 @@ interface Props {
   onUpgrade: () => void
 }
 
+type BusyAction = 'restore' | 'privacy' | 'export' | 'import' | null
+const MAX_IMPORT_BYTES = 5 * 1024 * 1024
+
 export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   const { settings } = api.data
   const { premium, restore, isNative, loading } = usePremium()
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false)
+  const [busy, setBusy] = useState<BusyAction>(null)
 
   useEffect(() => {
     let active = true
@@ -42,23 +47,37 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   }, [isNative, loading, premium])
 
   async function doRestore() {
-    const ok = await restore()
-    setMsg(ok ? '購入を復元しました' : '復元できる購入が見つかりませんでした')
+    if (busy) return
+    setBusy('restore')
+    setMsg(null)
+    try {
+      const ok = await restore()
+      setMsg(ok ? '購入を復元しました' : '復元できる購入が見つかりませんでした')
+    } finally {
+      setBusy(null)
+    }
   }
 
   async function manageAdPrivacy() {
-    const state = await showAdPrivacyOptions()
-    setPrivacyOptionsRequired(state.privacyOptionsRequired)
+    if (busy) return
+    setBusy('privacy')
+    setMsg(null)
+    try {
+      const state = await showAdPrivacyOptions()
+      setPrivacyOptionsRequired(state.privacyOptionsRequired)
 
-    if (state.canRequestAds) {
-      const shown = await showBanner()
-      document.documentElement.style.setProperty('--ad-h', shown ? '60px' : '0px')
-    } else {
-      await hideBanner()
-      document.documentElement.style.setProperty('--ad-h', '0px')
+      if (state.canRequestAds) {
+        const shown = await showBanner()
+        document.documentElement.style.setProperty('--ad-h', shown ? '60px' : '0px')
+      } else {
+        await hideBanner()
+        document.documentElement.style.setProperty('--ad-h', '0px')
+      }
+
+      setMsg('広告のプライバシー設定を更新しました')
+    } finally {
+      setBusy(null)
     }
-
-    setMsg('広告のプライバシー設定を更新しました')
   }
 
   function contact() {
@@ -75,39 +94,99 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
     location.href = `https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`
   }
 
-  function doExport() {
-    const text = exportData(api.data)
-    const blob = new Blob([text], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const stamp = new Date().toISOString().slice(0, 10)
-    a.download = `habit-stamp-${stamp}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-    setMsg('データを書き出しました')
+  function clickDownload(href: string, filename: string, revoke?: string) {
+    const anchor = document.createElement('a')
+    anchor.href = href
+    anchor.download = filename
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    if (revoke) window.setTimeout(() => URL.revokeObjectURL(revoke), 1000)
   }
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  async function doExport() {
+    if (busy) return
+    setBusy('export')
+    setMsg(null)
+
+    const text = exportData(api.data)
+    const filename = `habit-stamp-${toKey(new Date())}.json`
+
+    try {
+      if (isNative) {
+        const file = new File([text], filename, { type: 'application/json' })
+        if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: 'スタンプ習慣 バックアップ',
+              files: [file],
+            })
+            setMsg('データを書き出しました')
+            return
+          } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') {
+              setMsg('書き出しをキャンセルしました')
+              return
+            }
+          }
+        }
+
+        // iOS 15〜17.2のWKWebViewではblob:のdownloadが失敗するためdata URLを使う。
+        const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(text)}`
+        clickDownload(dataUrl, filename)
+      } else {
+        const blob = new Blob([text], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        clickDownload(url, filename, url)
+      }
+      setMsg('データを書き出しました')
+    } catch {
+      setMsg('データの書き出しに失敗しました')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  function onFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || busy) return
+    if (file.size > MAX_IMPORT_BYTES) {
+      setMsg('ファイルが大きすぎます（5MB以下のJSONをご利用ください）')
+      return
+    }
+
+    setBusy('import')
+    setMsg(null)
     const reader = new FileReader()
     reader.onload = () => {
       try {
         const data = parseImport(String(reader.result))
-        if (!confirm('現在のデータを上書きします。よろしいですか？')) return
+        if (!confirm('現在のデータを上書きします。よろしいですか？')) {
+          setMsg('読み込みをキャンセルしました')
+          return
+        }
         api.replaceAll(data)
         setMsg('データを読み込みました')
-      } catch {
-        setMsg('読み込みに失敗しました（ファイル形式をご確認ください）')
+      } catch (error) {
+        setMsg(error instanceof Error ? error.message : '読み込みに失敗しました')
+      } finally {
+        setBusy(null)
       }
     }
+    reader.onerror = () => {
+      setBusy(null)
+      setMsg('ファイルを読み取れませんでした')
+    }
+    reader.onabort = () => {
+      setBusy(null)
+      setMsg('読み込みをキャンセルしました')
+    }
     reader.readAsText(file)
-    e.target.value = ''
   }
 
   const habitCount = api.data.habits.length
-  const recordCount = Object.values(api.data.records).reduce((n, a) => n + a.length, 0)
+  const recordCount = Object.values(api.data.records).reduce((count, dates) => count + dates.length, 0)
 
   return (
     <Sheet title="設定" onClose={onClose}>
@@ -132,7 +211,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
             </div>
           </div>
         ) : (
-          <button className="premium-card" onClick={onUpgrade}>
+          <button className="premium-card" onClick={onUpgrade} disabled={busy !== null}>
             <span className="premium-card__badge" aria-hidden>✨</span>
             <div className="premium-card__text">
               <strong>広告を消す（プレミアム）</strong>
@@ -151,7 +230,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
             type="checkbox"
             className="toggle__input"
             checked={settings.sound}
-            onChange={(e) => api.setSettings({ sound: e.target.checked })}
+            onChange={(event) => api.setSettings({ sound: event.target.checked })}
           />
           <span className="toggle__track" aria-hidden />
         </label>
@@ -159,11 +238,15 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
         <div className="settings__group">
           <span className="settings__group-title">データ</span>
           <p className="settings__note">
-            記録はこの端末のブラウザ内（localStorage）に保存されます。機種変更やバックアップにはエクスポートをご利用ください。
+            記録は{isNative ? 'この端末内' : 'このブラウザ内'}に保存されます。機種変更やバックアップにはエクスポートをご利用ください。
           </p>
           <div className="settings__buttons">
-            <button className="btn btn--soft btn--block" onClick={doExport}>⬇ エクスポート</button>
-            <button className="btn btn--soft btn--block" onClick={() => fileRef.current?.click()}>⬆ インポート</button>
+            <button className="btn btn--soft btn--block" onClick={doExport} disabled={busy !== null}>
+              {busy === 'export' ? '書き出し中…' : '⬇ エクスポート'}
+            </button>
+            <button className="btn btn--soft btn--block" onClick={() => fileRef.current?.click()} disabled={busy !== null}>
+              {busy === 'import' ? '読み込み中…' : '⬆ インポート'}
+            </button>
             <input ref={fileRef} type="file" accept="application/json,.json" onChange={onFile} hidden />
           </div>
         </div>
@@ -172,19 +255,19 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
           <span className="settings__group-title">情報・サポート</span>
           <div className="settings__links">
             {!premium && (
-              <button className="linkrow" onClick={doRestore}>
-                <span>購入を復元</span><span className="linkrow__chev" aria-hidden>›</span>
+              <button className="linkrow" onClick={doRestore} disabled={busy !== null}>
+                <span>{busy === 'restore' ? '購入を確認中…' : '購入を復元'}</span><span className="linkrow__chev" aria-hidden>›</span>
               </button>
             )}
             {privacyOptionsRequired && !premium && (
-              <button className="linkrow" onClick={manageAdPrivacy}>
-                <span>広告のプライバシー設定</span><span className="linkrow__chev" aria-hidden>›</span>
+              <button className="linkrow" onClick={manageAdPrivacy} disabled={busy !== null}>
+                <span>{busy === 'privacy' ? '設定を確認中…' : '広告のプライバシー設定'}</span><span className="linkrow__chev" aria-hidden>›</span>
               </button>
             )}
-            <button className="linkrow" onClick={rate}>
+            <button className="linkrow" onClick={rate} disabled={busy !== null}>
               <span>アプリを評価する</span><span className="linkrow__chev" aria-hidden>›</span>
             </button>
-            <button className="linkrow" onClick={contact}>
+            <button className="linkrow" onClick={contact} disabled={busy !== null}>
               <span>お問い合わせ</span><span className="linkrow__chev" aria-hidden>›</span>
             </button>
             <a className="linkrow" href={URL_TERMS} target="_blank" rel="noreferrer">

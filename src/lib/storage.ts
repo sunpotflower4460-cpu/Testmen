@@ -1,8 +1,13 @@
 import type { AppData, Habit, Records, Settings } from './types.js'
-import { DEFAULT_COLOR_ID } from './palette.js'
+import { DEFAULT_COLOR_ID, getColor } from './palette.js'
 
 const STORAGE_KEY = 'habit-stamp:v1'
 const SCHEMA_VERSION = 1
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/
+const RESERVED_IDS = new Set(Object.getOwnPropertyNames(Object.prototype))
+const MAX_TITLE_LENGTH = 24
+const MAX_EMOJI_LENGTH = 16
 
 export const DEFAULT_SETTINGS: Settings = {
   sound: true,
@@ -29,46 +34,78 @@ export function loadData(): AppData {
   }
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+function isValidDateKey(value: string): boolean {
+  if (!DATE_RE.test(value)) return false
+  const [year, month, day] = value.split('-').map(Number)
+  if (year < 1000 || month < 1 || month > 12 || day < 1 || day > 31) return false
+
+  const date = new Date(0)
+  date.setHours(12, 0, 0, 0)
+  date.setFullYear(year, month - 1, day)
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+}
+
+function isSafeId(value: unknown): value is string {
+  return typeof value === 'string' && SAFE_ID_RE.test(value) && !RESERVED_IDS.has(value)
+}
 
 function sanitizeHabits(input: unknown): Habit[] {
   if (!Array.isArray(input)) return []
+
+  const seen = new Set<string>()
   const out: Habit[] = []
-  input.forEach((h, i) => {
+
+  input.forEach((h, index) => {
     if (!h || typeof h !== 'object') return
     const o = h as Record<string, unknown>
-    if (typeof o.id !== 'string' || o.id === '') return
+    if (!isSafeId(o.id) || seen.has(o.id)) return
+    seen.add(o.id)
+
+    const rawTitle = typeof o.title === 'string' ? o.title.trim() : ''
+    const rawEmoji = typeof o.emoji === 'string' ? o.emoji : ''
+    const rawColor = typeof o.colorId === 'string' ? o.colorId : DEFAULT_COLOR_ID
+    const createdAtValue = typeof o.createdAt === 'string' ? Date.parse(o.createdAt) : Number.NaN
+
     out.push({
       id: o.id,
-      title: typeof o.title === 'string' && o.title ? o.title : '無題',
-      emoji: typeof o.emoji === 'string' && o.emoji ? o.emoji : '✓',
-      colorId: typeof o.colorId === 'string' && o.colorId ? o.colorId : DEFAULT_COLOR_ID,
-      createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date(0).toISOString(),
-      order: typeof o.order === 'number' && Number.isFinite(o.order) ? o.order : i,
+      title: (rawTitle || '無題').slice(0, MAX_TITLE_LENGTH),
+      emoji: (rawEmoji || '✓').slice(0, MAX_EMOJI_LENGTH),
+      colorId: getColor(rawColor).id,
+      createdAt: Number.isFinite(createdAtValue)
+        ? new Date(createdAtValue).toISOString()
+        : new Date(0).toISOString(),
+      order: typeof o.order === 'number' && Number.isFinite(o.order) ? o.order : index,
       archived: o.archived === true,
     })
   })
+
   return out
+    .sort((a, b) => a.order - b.order)
+    .map((habit, order) => ({ ...habit, order }))
 }
 
-function sanitizeRecords(input: unknown): Records {
+function sanitizeRecords(input: unknown, validHabitIds: Set<string>): Records {
   const out: Records = {}
-  if (!input || typeof input !== 'object') return out
-  for (const [id, val] of Object.entries(input as Record<string, unknown>)) {
-    if (!Array.isArray(val)) continue
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return out
+
+  for (const [id, value] of Object.entries(input as Record<string, unknown>)) {
+    if (!validHabitIds.has(id) || !Array.isArray(value)) continue
     const dates = Array.from(
-      new Set(val.filter((v): v is string => typeof v === 'string' && DATE_RE.test(v))),
+      new Set(value.filter((v): v is string => typeof v === 'string' && isValidDateKey(v))),
     ).sort()
-    if (dates.length) out[id] = dates
+    if (dates.length > 0) out[id] = dates
   }
   return out
 }
 
 function normalize(d: Partial<AppData>): AppData {
+  const habits = sanitizeHabits(d.habits)
+  const habitIds = new Set(habits.map((habit) => habit.id))
+
   return {
     version: SCHEMA_VERSION,
-    habits: sanitizeHabits(d.habits),
-    records: sanitizeRecords(d.records),
+    habits,
+    records: sanitizeRecords(d.records, habitIds),
     settings: {
       sound: typeof d.settings?.sound === 'boolean' ? d.settings.sound : DEFAULT_SETTINGS.sound,
       weekStart: d.settings?.weekStart === 1 ? 1 : 0,
@@ -76,11 +113,12 @@ function normalize(d: Partial<AppData>): AppData {
   }
 }
 
-export function saveData(data: AppData): void {
+export function saveData(data: AppData): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    return true
   } catch {
-    // 容量超過などは黙って無視（アプリは動作継続）
+    return false
   }
 }
 
@@ -90,16 +128,22 @@ export function exportData(data: AppData): string {
 
 export function parseImport(text: string): AppData {
   const parsed = JSON.parse(text)
-  if (typeof parsed !== 'object' || parsed === null) {
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     throw new Error('不正な形式です')
   }
+
   const o = parsed as Record<string, unknown>
-  if (!('habits' in o) && !('records' in o)) {
+  if (!Array.isArray(o.habits) || !o.records || typeof o.records !== 'object' || Array.isArray(o.records)) {
     throw new Error('このアプリのデータではありません')
   }
+  if (typeof o.version === 'number' && o.version > SCHEMA_VERSION) {
+    throw new Error('このバージョンでは読み込めない新しい形式です')
+  }
+
   return normalize(parsed as Partial<AppData>)
 }
 
 export function uid(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+  if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID()
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
