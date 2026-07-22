@@ -13,16 +13,21 @@ const project = read('ios/App/App.xcodeproj/project.pbxproj')
 const privacyPolicy = read('public/privacy.html')
 const terms = read('public/terms.html')
 
+const revenueCatKey = config.match(/REVENUECAT_IOS_API_KEY\s*=\s*'([^']+)'/)?.[1] ?? ''
+const admobBannerId = config.match(/ADMOB_BANNER_IOS\s*=\s*'([^']*)'/)?.[1] ?? ''
+const ADMOB_TEST_BANNER_ID = 'ca-app-pub-3940256099942544/2934735716'
+const ADMOB_TEST_APP_ID = 'ca-app-pub-3940256099942544~1458002511'
+
 requireCheck(
-  /REVENUECAT_IOS_API_KEY\s*=\s*'appl_(?!X{3})[^']{8,}'/.test(config),
+  /^appl_(?!X{3})\S{8,}$/.test(revenueCatKey),
   'RevenueCatの本番Public API keyを src/lib/config.ts に設定してください。',
 )
 requireCheck(
-  /ADMOB_BANNER_IOS\s*=\s*'ca-app-pub-\d+\/\d+'/.test(config),
-  'AdMobの本番バナー広告ユニットIDを src/lib/config.ts に設定してください。',
+  /^ca-app-pub-\d+\/\d+$/.test(admobBannerId) && admobBannerId !== ADMOB_TEST_BANNER_ID,
+  'AdMobの本番バナー広告ユニットIDを src/lib/config.ts に設定してください（Google公式テストIDは使用不可）。',
 )
 requireCheck(
-  !info.includes('ca-app-pub-3940256099942544~1458002511'),
+  !info.includes(ADMOB_TEST_APP_ID),
   'Info.plist の GADApplicationIdentifier を本番AdMobアプリIDへ変更してください。',
 )
 requireCheck(
