@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
 import { todayKey } from './date'
 
-/**
- * 現在の日付キー("YYYY-MM-DD")を返し、日付が変わったら自動で更新する。
- * これを使う側は日をまたいだ瞬間に再描画され、「今日」表示が古いままにならない。
- * タブ復帰(visibilitychange)時にも取り直す。
- */
+/** 現在の日付キーを返し、日付・時計・タイムゾーン変更にも追従する。 */
 export function useDayKey(): string {
   const [key, setKey] = useState(todayKey)
 
   useEffect(() => {
     let timer: number | undefined
 
+    const clearTimer = () => {
+      if (timer !== undefined) window.clearTimeout(timer)
+      timer = undefined
+    }
+
     const scheduleMidnight = () => {
+      clearTimer()
       const now = new Date()
       const next = new Date(
         now.getFullYear(),
@@ -20,23 +22,33 @@ export function useDayKey(): string {
         now.getDate() + 1,
         0,
         0,
-        2, // 深夜0時の2秒後に確実に切り替える
+        2,
       )
       timer = window.setTimeout(() => {
         setKey(todayKey())
         scheduleMidnight()
-      }, next.getTime() - now.getTime())
+      }, Math.max(0, next.getTime() - now.getTime()))
     }
+
+    const refresh = () => {
+      setKey(todayKey())
+      scheduleMidnight()
+    }
+
     scheduleMidnight()
 
     const onVisible = () => {
-      if (document.visibilityState === 'visible') setKey(todayKey())
+      if (document.visibilityState === 'visible') refresh()
     }
     document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', refresh)
+    window.addEventListener('pageshow', refresh)
 
     return () => {
-      if (timer) window.clearTimeout(timer)
+      clearTimer()
       document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', refresh)
+      window.removeEventListener('pageshow', refresh)
     }
   }, [])
 
