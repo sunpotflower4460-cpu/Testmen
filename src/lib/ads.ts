@@ -14,8 +14,12 @@ const EMPTY_PRIVACY_STATE: AdPrivacyState = {
 let preparation: Promise<AdPrivacyState> | null = null
 let lastPrivacyState: AdPrivacyState | null = null
 
+function requiresPrivacyOptions(status: string): boolean {
+  return status === 'REQUIRED'
+}
+
 async function prepareAdsInternal(): Promise<AdPrivacyState> {
-  const { AdMob, PrivacyOptionsRequirementStatus } = await import('@capacitor-community/admob')
+  const { AdMob } = await import('@capacitor-community/admob')
 
   await AdMob.initialize({})
 
@@ -26,8 +30,7 @@ async function prepareAdsInternal(): Promise<AdPrivacyState> {
 
   const state: AdPrivacyState = {
     canRequestAds: consentInfo.canRequestAds,
-    privacyOptionsRequired:
-      consentInfo.privacyOptionsRequirementStatus === PrivacyOptionsRequirementStatus.REQUIRED,
+    privacyOptionsRequired: requiresPrivacyOptions(consentInfo.privacyOptionsRequirementStatus),
   }
 
   if (state.canRequestAds) {
@@ -100,13 +103,12 @@ export async function showAdPrivacyOptions(): Promise<AdPrivacyState> {
   if (!current.privacyOptionsRequired) return current
 
   try {
-    const { AdMob, PrivacyOptionsRequirementStatus } = await import('@capacitor-community/admob')
+    const { AdMob } = await import('@capacitor-community/admob')
     await AdMob.showPrivacyOptionsForm()
     const consentInfo = await AdMob.requestConsentInfo()
     const next: AdPrivacyState = {
       canRequestAds: consentInfo.canRequestAds,
-      privacyOptionsRequired:
-        consentInfo.privacyOptionsRequirementStatus === PrivacyOptionsRequirementStatus.REQUIRED,
+      privacyOptionsRequired: requiresPrivacyOptions(consentInfo.privacyOptionsRequirementStatus),
     }
     lastPrivacyState = next
     preparation = Promise.resolve(next)
