@@ -18,6 +18,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Production dependency audit
+        shell: bash
+        run: |
+          set -o pipefail
+          npm audit --omit=dev --audit-level=high 2>&1 | tee audit.log
       - name: Build
         shell: bash
         run: |
@@ -34,6 +39,7 @@ jobs:
         with:
           name: quality-logs
           path: |
+            audit.log
             build.log
             test.log
           if-no-files-found: ignore
