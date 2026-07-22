@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { parseImport } from '../.test-dist/src/lib/storage.js'
+import { emptyData, parseImport, saveData } from '../.test-dist/src/lib/storage.js'
 
 test('import normalizes malformed habits and records', () => {
   const data = parseImport(JSON.stringify({
@@ -10,6 +10,7 @@ test('import normalizes malformed habits and records', () => {
       { id: 'a', title: '', emoji: '', colorId: '', order: 1 },
       { id: 'a', title: 'duplicate', order: 0 },
       { id: '__proto__', title: 'unsafe' },
+      { id: 'constructor', title: 'also unsafe' },
       { id: '', title: 'invalid' },
     ],
     records: {
@@ -48,4 +49,35 @@ test('unrelated or partial JSON is rejected', () => {
 
 test('newer schema versions are rejected instead of being silently truncated', () => {
   assert.throws(() => parseImport('{"version":2,"habits":[],"records":{}}'))
+})
+
+test('saveData reports both persistence success and failure', () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+  let stored = ''
+
+  try {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: {
+        setItem(_key, value) {
+          stored = value
+        },
+      },
+    })
+    assert.equal(saveData(emptyData()), true)
+    assert.equal(JSON.parse(stored).version, 1)
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: {
+        setItem() {
+          throw new Error('quota exceeded')
+        },
+      },
+    })
+    assert.equal(saveData(emptyData()), false)
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'localStorage', original)
+    else delete globalThis.localStorage
+  }
 })
