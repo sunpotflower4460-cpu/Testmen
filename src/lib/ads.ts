@@ -1,38 +1,72 @@
-// ============================================================
-//  広告サービス（Google AdMob）
-//  - ネイティブ(iOS): 画面下部にバナーを表示
-//  - Web: 何もしない（プレビュー用のダミー枠は AdBanner が描画）
-// ============================================================
 import { isNative } from './platform'
 import { ADMOB_BANNER_IOS, ADMOB_BANNER_TEST } from './config'
 
-let initialized = false
-
-/** AdMob 初期化 ＋ ATT（トラッキング許可）リクエスト。ネイティブのみ。 */
-export async function initAds(): Promise<void> {
-  if (!isNative() || initialized) return
-  try {
-    const { AdMob } = await import('@capacitor-community/admob')
-    await AdMob.initialize({})
-    // iOS14.5+ のトラッキング許可ダイアログ（広告のパーソナライズに必要）
-    try {
-      await AdMob.requestTrackingAuthorization()
-    } catch {
-      // 許可なしでも非パーソナライズ広告で継続
-    }
-    initialized = true
-  } catch (e) {
-    console.warn('AdMob init failed', e)
-  }
+export interface AdPrivacyState {
+  canRequestAds: boolean
+  privacyOptionsRequired: boolean
 }
 
-/** バナーを表示。ネイティブのみ。 */
-export async function showBanner(): Promise<void> {
-  if (!isNative()) return
+const EMPTY_PRIVACY_STATE: AdPrivacyState = {
+  canRequestAds: false,
+  privacyOptionsRequired: false,
+}
+
+let preparation: Promise<AdPrivacyState> | null = null
+let lastPrivacyState: AdPrivacyState | null = null
+
+function requiresPrivacyOptions(status: string): boolean {
+  return status === 'REQUIRED'
+}
+
+async function prepareAdsInternal(): Promise<AdPrivacyState> {
+  const { AdMob } = await import('@capacitor-community/admob')
+
+  await AdMob.initialize({})
+
+  let consentInfo = await AdMob.requestConsentInfo()
+  if (!consentInfo.canRequestAds && consentInfo.isConsentFormAvailable) {
+    consentInfo = await AdMob.showConsentForm()
+  }
+
+  const state: AdPrivacyState = {
+    canRequestAds: consentInfo.canRequestAds,
+    privacyOptionsRequired: requiresPrivacyOptions(consentInfo.privacyOptionsRequirementStatus),
+  }
+
+  if (state.canRequestAds) {
+    try {
+      const tracking = await AdMob.trackingAuthorizationStatus()
+      if (tracking.status === 'notDetermined') {
+        await AdMob.requestTrackingAuthorization()
+      }
+    } catch {
+      // ATTが利用できない／拒否でも一般広告として継続できる。
+    }
+  }
+
+  lastPrivacyState = state
+  return state
+}
+
+export async function prepareAds(): Promise<AdPrivacyState> {
+  if (!isNative()) return EMPTY_PRIVACY_STATE
+  if (!preparation) {
+    preparation = prepareAdsInternal().catch((error) => {
+      preparation = null
+      console.warn('AdMob preparation failed', error)
+      return EMPTY_PRIVACY_STATE
+    })
+  }
+  return preparation
+}
+
+export async function showBanner(): Promise<boolean> {
+  if (!isNative()) return false
+  const privacy = await prepareAds()
+  if (!privacy.canRequestAds) return false
+
   try {
-    const { AdMob, BannerAdPosition, BannerAdSize } = await import(
-      '@capacitor-community/admob'
-    )
+    const { AdMob, BannerAdPosition, BannerAdSize } = await import('@capacitor-community/admob')
     const useTest = !ADMOB_BANNER_IOS
     await AdMob.showBanner({
       adId: ADMOB_BANNER_IOS || ADMOB_BANNER_TEST,
@@ -41,18 +75,46 @@ export async function showBanner(): Promise<void> {
       margin: 0,
       isTesting: useTest,
     })
-  } catch (e) {
-    console.warn('showBanner failed', e)
+    return true
+  } catch (error) {
+    console.warn('showBanner failed', error)
+    return false
   }
 }
 
-/** バナーを消す（購入後など）。ネイティブのみ。 */
 export async function hideBanner(): Promise<void> {
   if (!isNative()) return
   try {
     const { AdMob } = await import('@capacitor-community/admob')
     await AdMob.removeBanner()
-  } catch (e) {
-    console.warn('hideBanner failed', e)
+  } catch (error) {
+    console.warn('hideBanner failed', error)
+  }
+}
+
+export async function getAdPrivacyState(): Promise<AdPrivacyState> {
+  if (!isNative()) return EMPTY_PRIVACY_STATE
+  return lastPrivacyState ?? prepareAds()
+}
+
+export async function showAdPrivacyOptions(): Promise<AdPrivacyState> {
+  if (!isNative()) return EMPTY_PRIVACY_STATE
+  const current = await prepareAds()
+  if (!current.privacyOptionsRequired) return current
+
+  try {
+    const { AdMob } = await import('@capacitor-community/admob')
+    await AdMob.showPrivacyOptionsForm()
+    const consentInfo = await AdMob.requestConsentInfo()
+    const next: AdPrivacyState = {
+      canRequestAds: consentInfo.canRequestAds,
+      privacyOptionsRequired: requiresPrivacyOptions(consentInfo.privacyOptionsRequirementStatus),
+    }
+    lastPrivacyState = next
+    preparation = Promise.resolve(next)
+    return next
+  } catch (error) {
+    console.warn('showPrivacyOptionsForm failed', error)
+    return current
   }
 }

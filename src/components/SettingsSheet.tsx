@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AppApi } from '../lib/useAppData'
 import { Sheet } from './Sheet'
 import { exportData, parseImport } from '../lib/storage'
 import { usePremium } from '../lib/usePremium'
+import { getAdPrivacyState, hideBanner, showAdPrivacyOptions, showBanner } from '../lib/ads'
 import {
   URL_PRIVACY,
   URL_TERMS,
@@ -19,13 +20,45 @@ interface Props {
 
 export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   const { settings } = api.data
-  const { premium, restore } = usePremium()
+  const { premium, restore, isNative, loading } = usePremium()
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    if (!isNative || premium || loading) {
+      setPrivacyOptionsRequired(false)
+      return undefined
+    }
+
+    void getAdPrivacyState().then((state) => {
+      if (active) setPrivacyOptionsRequired(state.privacyOptionsRequired)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [isNative, loading, premium])
 
   async function doRestore() {
     const ok = await restore()
     setMsg(ok ? '購入を復元しました' : '復元できる購入が見つかりませんでした')
+  }
+
+  async function manageAdPrivacy() {
+    const state = await showAdPrivacyOptions()
+    setPrivacyOptionsRequired(state.privacyOptionsRequired)
+
+    if (state.canRequestAds) {
+      const shown = await showBanner()
+      document.documentElement.style.setProperty('--ad-h', shown ? '60px' : '0px')
+    } else {
+      await hideBanner()
+      document.documentElement.style.setProperty('--ad-h', '0px')
+    }
+
+    setMsg('広告のプライバシー設定を更新しました')
   }
 
   function contact() {
@@ -90,7 +123,6 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
           </div>
         </div>
 
-        {/* プレミアム */}
         {premium ? (
           <div className="premium-card premium-card--owned">
             <span className="premium-card__badge" aria-hidden>✨</span>
@@ -130,53 +162,41 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
             記録はこの端末のブラウザ内（localStorage）に保存されます。機種変更やバックアップにはエクスポートをご利用ください。
           </p>
           <div className="settings__buttons">
-            <button className="btn btn--soft btn--block" onClick={doExport}>
-              ⬇ エクスポート
-            </button>
-            <button className="btn btn--soft btn--block" onClick={() => fileRef.current?.click()}>
-              ⬆ インポート
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/json,.json"
-              onChange={onFile}
-              hidden
-            />
+            <button className="btn btn--soft btn--block" onClick={doExport}>⬇ エクスポート</button>
+            <button className="btn btn--soft btn--block" onClick={() => fileRef.current?.click()}>⬆ インポート</button>
+            <input ref={fileRef} type="file" accept="application/json,.json" onChange={onFile} hidden />
           </div>
         </div>
 
-        {/* 情報・サポート */}
         <div className="settings__group">
           <span className="settings__group-title">情報・サポート</span>
           <div className="settings__links">
             {!premium && (
               <button className="linkrow" onClick={doRestore}>
-                <span>購入を復元</span>
-                <span className="linkrow__chev" aria-hidden>›</span>
+                <span>購入を復元</span><span className="linkrow__chev" aria-hidden>›</span>
+              </button>
+            )}
+            {privacyOptionsRequired && !premium && (
+              <button className="linkrow" onClick={manageAdPrivacy}>
+                <span>広告のプライバシー設定</span><span className="linkrow__chev" aria-hidden>›</span>
               </button>
             )}
             <button className="linkrow" onClick={rate}>
-              <span>アプリを評価する</span>
-              <span className="linkrow__chev" aria-hidden>›</span>
+              <span>アプリを評価する</span><span className="linkrow__chev" aria-hidden>›</span>
             </button>
             <button className="linkrow" onClick={contact}>
-              <span>お問い合わせ</span>
-              <span className="linkrow__chev" aria-hidden>›</span>
+              <span>お問い合わせ</span><span className="linkrow__chev" aria-hidden>›</span>
             </button>
             <a className="linkrow" href={URL_TERMS} target="_blank" rel="noreferrer">
-              <span>利用規約</span>
-              <span className="linkrow__chev" aria-hidden>›</span>
+              <span>利用規約</span><span className="linkrow__chev" aria-hidden>›</span>
             </a>
             <a className="linkrow" href={URL_PRIVACY} target="_blank" rel="noreferrer">
-              <span>プライバシーポリシー</span>
-              <span className="linkrow__chev" aria-hidden>›</span>
+              <span>プライバシーポリシー</span><span className="linkrow__chev" aria-hidden>›</span>
             </a>
           </div>
         </div>
 
         {msg && <p className="settings__msg" role="status">{msg}</p>}
-
         <p className="settings__version">スタンプ習慣 v{APP_VERSION}</p>
       </div>
     </Sheet>

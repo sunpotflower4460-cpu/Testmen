@@ -7,7 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test tests/*.test.mjs",
+    "check": "npm run build && npm test",
+    "validate:appstore": "node scripts/validate-appstore.mjs"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",

@@ -6,34 +6,34 @@ interface Props {
   onUpgrade: () => void
 }
 
-/**
- * 広告枠。
- * - プレミアム時は一切表示しない。
- * - ネイティブ: 画面下に実際の AdMob バナーを出し、DOM側は高さ分を確保。
- * - Web: 実広告は出せないため、レイアウト確認用のプレビュー枠を表示。
- */
 export function AdBanner({ onUpgrade }: Props) {
-  const { premium, isNative } = usePremium()
+  const { premium, loading, isNative } = usePremium()
 
   useEffect(() => {
-    if (isNative && !premium) {
-      showBanner()
-      document.documentElement.style.setProperty('--ad-h', '60px')
-      return () => {
-        hideBanner()
-        document.documentElement.style.setProperty('--ad-h', '0px')
-      }
+    let cancelled = false
+
+    if (!isNative || loading || premium) {
+      document.documentElement.style.setProperty('--ad-h', '0px')
+      if (isNative && premium) void hideBanner()
+      return undefined
     }
-    document.documentElement.style.setProperty('--ad-h', '0px')
-    return undefined
-  }, [isNative, premium])
 
-  if (premium) return null
+    void showBanner().then((shown) => {
+      if (!cancelled) {
+        document.documentElement.style.setProperty('--ad-h', shown ? '60px' : '0px')
+      }
+    })
 
-  // ネイティブでは実バナーが下部オーバーレイで表示されるため、DOMには何も出さない
+    return () => {
+      cancelled = true
+      document.documentElement.style.setProperty('--ad-h', '0px')
+      void hideBanner()
+    }
+  }, [isNative, loading, premium])
+
+  if (loading || premium) return null
   if (isNative) return null
 
-  // Web プレビュー用のダミー枠
   return (
     <div className="adbanner" role="complementary" aria-label="広告">
       <span className="adbanner__tag">広告</span>

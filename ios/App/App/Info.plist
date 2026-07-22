@@ -30,7 +30,7 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
@@ -44,20 +44,16 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 
-	<!-- 輸出コンプライアンス（標準暗号のみ→申請時の質問を自動回答） -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 
-	<!-- App Tracking Transparency（広告のパーソナライズ許可ダイアログの文言） -->
 	<key>NSUserTrackingUsageDescription</key>
 	<string>あなたに関連性の高い広告を表示するために使用します。許可しない場合も、一般的な広告が表示されます。</string>
 
-	<!-- Google AdMob アプリID -->
-	<!-- TODO: 下記は Google のテスト用アプリIDです。公開前に自分の AdMob アプリID(ca-app-pub-XXXX~XXXX)へ置き換えてください。 -->
+	<!-- TODO: 公開前に本番のAdMobアプリIDへ置き換える。validate:appstoreが未設定を検出する。 -->
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
 
-	<!-- SKAdNetwork（広告アトリビューション）。Google の最新一覧に合わせて更新可 -->
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict><key>SKAdNetworkIdentifier</key><string>cstr6suwn9.skadnetwork</string></dict>
