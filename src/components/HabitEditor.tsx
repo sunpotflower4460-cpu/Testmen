@@ -27,8 +27,6 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
   }, [habit])
 
   const color = getColor(colorId)
-
-  // 編集中タイトルの記録統計と、並び替え位置
   const stats = useMemo(() => {
     if (!habit) return null
     const keys = api.data.records[habit.id] ?? []
@@ -39,17 +37,14 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
     }
   }, [habit, api.data.records])
 
-  const index = habit ? habits.findIndex((h) => h.id === habit.id) : -1
+  const index = habit ? habits.findIndex((item) => item.id === habit.id) : -1
   const isFirst = index <= 0
   const isLast = index < 0 || index >= habits.length - 1
 
   function save() {
     if (!title.trim()) return
-    if (editing && habit) {
-      api.updateHabit(habit.id, { title, emoji, colorId })
-    } else {
-      api.addHabit({ title, emoji, colorId })
-    }
+    if (editing && habit) api.updateHabit(habit.id, { title, emoji, colorId })
+    else api.addHabit({ title, emoji, colorId })
     onClose()
   }
 
@@ -61,29 +56,16 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
   return (
     <Sheet title={editing ? 'タイトルを編集' : '新しいタイトル'} onClose={onClose}>
       <div className="editor">
-        {/* プレビュー */}
-        <div
-          className="editor__preview"
-          style={{ '--ink': color.ink, '--tint': color.tint } as React.CSSProperties}
-        >
+        <div className="editor__preview" style={{ '--ink': color.ink, '--tint': color.tint } as React.CSSProperties}>
           <span className="editor__preview-stamp">{emoji}</span>
           <span className="editor__preview-title">{title.trim() || 'タイトル名'}</span>
         </div>
 
         {stats && (
           <div className="editor__stats">
-            <div className="editor__stat">
-              <strong>{stats.total}</strong>
-              <span>回</span>
-            </div>
-            <div className="editor__stat">
-              <strong>{stats.current}</strong>
-              <span>現在の連続</span>
-            </div>
-            <div className="editor__stat">
-              <strong>{stats.longest}</strong>
-              <span>最長の連続</span>
-            </div>
+            <div className="editor__stat"><strong>{stats.total}</strong><span>回</span></div>
+            <div className="editor__stat"><strong>{stats.current}</strong><span>現在の連続</span></div>
+            <div className="editor__stat"><strong>{stats.longest}</strong><span>最長の連続</span></div>
           </div>
         )}
 
@@ -95,24 +77,27 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
             value={title}
             maxLength={24}
             placeholder="例）本を10分読む"
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(event) => setTitle(event.target.value)}
             autoFocus
-            onKeyDown={(e) => e.key === 'Enter' && save()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.nativeEvent.isComposing) save()
+            }}
           />
         </label>
 
         <div className="field">
           <span className="field__label">ハンコの絵柄</span>
           <div className="emoji-grid">
-            {EMOJI_CHOICES.map((em) => (
+            {EMOJI_CHOICES.map((item) => (
               <button
-                key={em}
+                key={item}
                 type="button"
-                className={'emoji-grid__item' + (em === emoji ? ' is-selected' : '')}
-                onClick={() => setEmoji(em)}
-                aria-pressed={em === emoji}
+                className={'emoji-grid__item' + (item === emoji ? ' is-selected' : '')}
+                onClick={() => setEmoji(item)}
+                aria-label={item}
+                aria-pressed={item === emoji}
               >
-                {em}
+                {item}
               </button>
             ))}
           </div>
@@ -121,16 +106,16 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
         <div className="field">
           <span className="field__label">インクの色</span>
           <div className="color-row">
-            {INK_COLORS.map((c) => (
+            {INK_COLORS.map((item) => (
               <button
-                key={c.id}
+                key={item.id}
                 type="button"
-                className={'color-dot' + (c.id === colorId ? ' is-selected' : '')}
-                style={{ background: c.ink }}
-                onClick={() => setColorId(c.id)}
-                aria-label={c.name}
-                aria-pressed={c.id === colorId}
-                title={c.name}
+                className={'color-dot' + (item.id === colorId ? ' is-selected' : '')}
+                style={{ background: item.ink }}
+                onClick={() => setColorId(item.id)}
+                aria-label={item.name}
+                aria-pressed={item.id === colorId}
+                title={item.name}
               />
             ))}
           </div>
@@ -140,18 +125,10 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
           <div className="field">
             <span className="field__label">並び順</span>
             <div className="reorder">
-              <button
-                className="btn btn--soft"
-                onClick={() => habit && api.moveHabit(habit.id, -1)}
-                disabled={isFirst}
-              >
+              <button className="btn btn--soft" onClick={() => habit && api.moveHabit(habit.id, -1)} disabled={isFirst}>
                 ↑ 上へ
               </button>
-              <button
-                className="btn btn--soft"
-                onClick={() => habit && api.moveHabit(habit.id, 1)}
-                disabled={isLast}
-              >
+              <button className="btn btn--soft" onClick={() => habit && api.moveHabit(habit.id, 1)} disabled={isLast}>
                 ↓ 下へ
               </button>
             </div>
@@ -159,11 +136,7 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
         )}
 
         <div className="editor__actions">
-          <button
-            className="btn btn--primary btn--block"
-            onClick={save}
-            disabled={!title.trim()}
-          >
+          <button className="btn btn--primary btn--block" onClick={save} disabled={!title.trim()}>
             {editing ? '保存する' : '作成する'}
           </button>
 
@@ -176,12 +149,8 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
             <div className="confirm">
               <p className="confirm__text">記録もすべて削除されます。よろしいですか？</p>
               <div className="confirm__row">
-                <button className="btn btn--soft" onClick={() => setConfirmDelete(false)}>
-                  やめる
-                </button>
-                <button className="btn btn--danger" onClick={remove}>
-                  削除する
-                </button>
+                <button className="btn btn--soft" onClick={() => setConfirmDelete(false)}>やめる</button>
+                <button className="btn btn--danger" onClick={remove}>削除する</button>
               </div>
             </div>
           )}
