@@ -1,27 +1,23 @@
 default_platform(:ios)
 
 platform :ios do
-  # メタデータとスクリーンショットだけを App Store Connect にアップロード（バイナリなし）
-  # 事前に App Store Connect でアプリ(Bundle ID)を作成しておいてください。
   desc "ストア情報(説明文・スクショ)をアップロード"
   lane :upload_metadata do
     deliver(
       skip_binary_upload: true,
       skip_screenshots: false,
       overwrite_screenshots: true,
-      force: true,             # プレビュー確認をスキップ
+      force: true,
       run_precheck_before_submit: false,
       languages: ["ja"]
     )
   end
 
-  # ビルド → アップロード（要: 署名設定済み・実機/CI）
-  desc "ビルドして App Store Connect へアップロード"
+  desc "品質確認・提出前検査・ビルドを行い App Store Connect へアップロード"
   lane :release do
-    # Webビルドを同期
-    sh("cd .. && npm run build && npx cap sync ios")
+    sh("cd .. && npm run check && npm run validate:appstore && npx cap sync ios")
     build_app(
-      project: "App/App.xcodeproj", # SPMのためworkspaceではなくproject
+      project: "App/App.xcodeproj",
       scheme: "App",
       export_method: "app-store"
     )

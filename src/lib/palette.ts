@@ -1,6 +1,5 @@
-import type { InkColor } from './types'
+import type { InkColor } from './types.js'
 
-/** ハンコのインク色プリセット（和の色味）。先頭が既定の朱色。 */
 export const INK_COLORS: InkColor[] = [
   { id: 'vermilion', name: '朱', ink: '#e0402f', tint: '#fbe7e2' },
   { id: 'indigo', name: '藍', ink: '#2f5aa8', tint: '#e2e9f5' },
@@ -13,14 +12,12 @@ export const INK_COLORS: InkColor[] = [
 ]
 
 export const DEFAULT_COLOR_ID = INK_COLORS[0].id
-
 const FALLBACK = INK_COLORS[0]
 
 export function getColor(colorId: string): InkColor {
   return INK_COLORS.find((c) => c.id === colorId) ?? FALLBACK
 }
 
-/** ハンコの絵柄によく使う絵文字候補。 */
 export const EMOJI_CHOICES = [
   '✓', '🔥', '💪', '📖', '🏃', '🧘', '💧', '🥗',
   '😴', '🦷', '🧹', '✍️', '🎸', '🎨', '🌱', '☀️',

@@ -1,5 +1,5 @@
-import type { AppData, Habit, Records, Settings } from './types'
-import { DEFAULT_COLOR_ID } from './palette'
+import type { AppData, Habit, Records, Settings } from './types.js'
+import { DEFAULT_COLOR_ID } from './palette.js'
 
 const STORAGE_KEY = 'habit-stamp:v1'
 const SCHEMA_VERSION = 1
@@ -18,7 +18,6 @@ export function emptyData(): AppData {
   }
 }
 
-/** localStorage から読み込む。壊れていれば空データにフォールバック。 */
 export function loadData(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -32,7 +31,6 @@ export function loadData(): AppData {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
-/** 不正なhabit要素を除外し、欠損フィールドを補完する。 */
 function sanitizeHabits(input: unknown): Habit[] {
   if (!Array.isArray(input)) return []
   const out: Habit[] = []
@@ -53,11 +51,6 @@ function sanitizeHabits(input: unknown): Habit[] {
   return out
 }
 
-/**
- * records を「habitId -> 有効な日付文字列(YYYY-MM-DD)の配列」に矯正する。
- * 破損データ（数値・文字列・非配列など）で描画時に new Set(...) が
- * 例外を投げてアプリが起動不能になるのを防ぐ。
- */
 function sanitizeRecords(input: unknown): Records {
   const out: Records = {}
   if (!input || typeof input !== 'object') return out
@@ -71,7 +64,6 @@ function sanitizeRecords(input: unknown): Records {
   return out
 }
 
-/** 欠損フィールドを補完し、型を揃える（破損データにも耐える）。 */
 function normalize(d: Partial<AppData>): AppData {
   return {
     version: SCHEMA_VERSION,
@@ -92,29 +84,22 @@ export function saveData(data: AppData): void {
   }
 }
 
-/** データをJSON文字列として書き出す（エクスポート用）。 */
 export function exportData(data: AppData): string {
   return JSON.stringify(data, null, 2)
 }
 
-/** JSON文字列を検証して取り込む（インポート用）。失敗時は例外。 */
 export function parseImport(text: string): AppData {
   const parsed = JSON.parse(text)
   if (typeof parsed !== 'object' || parsed === null) {
     throw new Error('不正な形式です')
   }
   const o = parsed as Record<string, unknown>
-  // このアプリのエクスポート形式であることの最低限の確認
   if (!('habits' in o) && !('records' in o)) {
     throw new Error('このアプリのデータではありません')
   }
-  // normalize が破損要素を除去しつつ正しい型に矯正する
   return normalize(parsed as Partial<AppData>)
 }
 
-/** 簡易ユニークID。 */
 export function uid(): string {
-  return (
-    Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-  )
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 }

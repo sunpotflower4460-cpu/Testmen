@@ -10,7 +10,6 @@ import { AdBanner } from './components/AdBanner'
 import { Paywall } from './components/Paywall'
 import { formatLongJa } from './lib/date'
 import { useDayKey } from './lib/useDayKey'
-import { initAds } from './lib/ads'
 import { nativeBootstrap } from './lib/nativeBootstrap'
 
 export default function App() {
@@ -23,10 +22,10 @@ export default function App() {
 
   const dayKey = useDayKey()
 
-  // ネイティブでは起動時の調整と AdMob 初期化（Webは何もしない）
+  // 広告は PremiumProvider の判定完了後に AdBanner 側で初期化する。
+  // 購入済みユーザーに AdMob / ATT を起動しないため、ここでは見た目調整だけ行う。
   useEffect(() => {
-    nativeBootstrap()
-    initAds()
+    void nativeBootstrap()
   }, [])
 
   const sortedHabits = useMemo(
@@ -34,7 +33,6 @@ export default function App() {
     [api.data.habits],
   )
 
-  // dayKey が変わる（日付が変わる）と再計算され、日をまたいでも「今日」が更新される
   const today = useMemo(() => formatLongJa(new Date()), [dayKey])
 
   function openNew() {

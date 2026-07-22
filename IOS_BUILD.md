@@ -1,77 +1,112 @@
-# iOS ビルド & App Store 申請ガイド（残り＝手動作業のみ）
+# iOS ビルド & App Store 申請ガイド
 
-自動化できる部分は**すべて実施済み**です。このリポジトリには次が含まれています：
+このリポジトリには、CapacitorのiOSプロジェクト、アイコン、Privacy Manifest、App Storeメタデータ、広告・課金の実装が含まれています。
+初版は **iPhone専用** とし、iPad用スクリーンショット不足による提出ブロックを避けます。
 
-- ✅ iOS ネイティブプロジェクト `ios/`（生成済み・Swift Package Manager 構成＝`pod install` 不要）
-- ✅ `Info.plist`：ATT文言・AdMob ID枠・SKAdNetwork・向き固定・輸出コンプライアンス自動回答
-- ✅ `ios/App/App/PrivacyInfo.xcprivacy`（Xcodeプロジェクトに登録済み）
-- ✅ アプリアイコン（1024, 透過なし）・スプラッシュ画像
-- ✅ App Store スクリーンショット 4枚（6.7", 1290×2796）`fastlane/screenshots/ja/`
-- ✅ ストア説明文・メタデータ `fastlane/metadata/`（自動アップロード可）
-- ✅ 広告(AdMob)・課金(RevenueCat)のコード実装
+## 0. 必要環境
 
-残っているのは、**あなたのアカウント/鍵が必要な手動作業だけ**です（下記）。
+- Node.js 22以上
+- Xcode 26以上
+- Apple Developer Program
+- AdMobアカウント
+- RevenueCatアカウント
 
----
+## 1. コード品質確認
 
-## 手動作業チェックリスト
-
-### A. 手元で開く（Mac）
 ```bash
-npm install
-npm run build
-npx cap sync ios     # ← ios/ は生成済み。add は不要
-npx cap open ios     # Xcode が開く（初回はSPM解決に少し時間がかかります）
+npm ci
+npm run check
 ```
 
-### B. 署名（Xcode）
-- **Signing & Capabilities → Team** に自分の Apple Developer チームを設定
-- Bundle ID は `com.sunpotflower.stamphabit`（変えたい場合は `capacitor.config.ts`・Xcode・`fastlane/Appfile` を揃える）
+`npm run check` はTypeScript/Vite本番ビルドと、日付・記録・インポートの自動テストを実行します。
 
-### C. 広告（AdMob）— 実IDに差し替え 🍎
-1. [AdMob](https://apps.admob.com/) でアプリ＋バナー広告ユニットを作成
-2. `src/lib/config.ts` の `ADMOB_BANNER_IOS` に**バナー広告ユニットID**
-3. `ios/App/App/Info.plist` の `GADApplicationIdentifier` を**自分のAdMobアプリID**へ
-   （現在は Google のテストIDが入っています）
-4. `npm run build && npx cap sync ios`
+## 2. Xcodeプロジェクトを同期
 
-### D. 課金（RevenueCat + App Store Connect）🍎
-1. App Store Connect：**App内課金（非消費型）** `remove_ads` を ¥300 で作成
-2. RevenueCat：Entitlement `premium` に `remove_ads` を紐付け、Offering(current) に追加、**Public API key(Apple)** を取得
-3. `src/lib/config.ts` の `REVENUECAT_IOS_API_KEY` を設定 → `npm run build && npx cap sync ios`
-   （`ENTITLEMENT_PREMIUM` / `PRODUCT_REMOVE_ADS` は既定値のままRevenueCat/ASCと一致させればOK）
+```bash
+npm run build
+npx cap sync ios
+npx cap open ios
+```
 
-### E. 公開URLの反映
-- Cloudflare の公開URLに合わせて更新：
-  - `src/lib/config.ts` の `URL_PRIVACY` / `URL_TERMS`
-  - `fastlane/metadata/ja/privacy_url.txt` / `support_url.txt` / `marketing_url.txt`
+Web側を変更した場合は、必ず `npm run build && npx cap sync ios` を再実行してください。
 
-### F. ストア情報の登録
-- 手入力する場合：`APPSTORE_METADATA.md` の内容をコピペ
-- 自動アップロードする場合（Mac）：
-  ```bash
-  bundle install            # 初回のみ（Gemfile）
-  bundle exec fastlane upload_metadata   # 説明文＋スクショをASCへ
-  ```
-  ※ 事前に App Store Connect で同じ Bundle ID のアプリを作成しておくこと
+## 3. 署名と端末設定
 
-### G. ビルド → 申請
-- Xcode：**Product → Archive → Distribute App → App Store Connect → Upload**
-  - または `bundle exec fastlane release`（署名設定済みが前提）
-- App Store Connect で **App本体＋App内課金 `remove_ads` を同時に審査提出**
-- App Privacy（データ収集）の設問は `APPSTORE_METADATA.md` の通りに回答
+Xcodeの **Signing & Capabilities** で次を確認します。
 
----
+- Team：自分のApple Developerチーム
+- Bundle Identifier：`com.sunpotflower.stamphabit`
+- Version / Build：`1.0.0 / 1`
+- Supported Destinations：iPhone
+- In-App Purchase capability：追加済みであることを確認
 
-## 補足
-- **Web を変更したら**：`npm run build && npx cap sync ios`（毎回）
-- `PrivacyInfo.xcprivacy` は登録済みですが、Xcode で対象ターゲットに含まれているか一度ご確認ください
-- スクリーンショットの他サイズが必要になったら、開発時に生成スクリプトで追加できます（履歴参照）
+## 4. AdMob・UMP同意
 
-## よくあるつまずき
-| 症状 | 対処 |
-|---|---|
-| 広告が出ない | まずはテストIDで確認。実IDは審査/反映まで時間差あり |
-| 課金で商品が取得できない | ASC の有料App契約・税務/銀行情報が未完了だと取得不可 |
-| SPM解決に失敗 | Xcode の File → Packages → Reset Package Caches |
-| Web変更が反映されない | `npm run build && npx cap sync ios` を再実行 |
+1. AdMobでiOSアプリとバナー広告ユニットを作成
+2. `src/lib/config.ts` の `ADMOB_BANNER_IOS` を本番バナーIDへ変更
+3. `ios/App/App/Info.plist` の `GADApplicationIdentifier` を本番アプリIDへ変更
+4. AdMobの **Privacy & messaging** で、対象地域向けメッセージを公開
+5. 実機で次を確認
+   - 初回起動で必要地域のみ同意フォームが出る
+   - 同意完了前に広告が読み込まれない
+   - 設定画面に必要時のみ「広告のプライバシー設定」が出る
+   - プレミアム購入済みではAdMob/ATTが起動しない
+
+## 5. RevenueCat・App内課金
+
+1. App Store Connectで非消費型IAP `remove_ads` を作成
+2. RevenueCatでEntitlement `premium` を作成
+3. `remove_ads` をCurrent OfferingのLifetime packageへ登録
+4. `src/lib/config.ts` の `REVENUECAT_IOS_API_KEY` をApple用Public API keyへ変更
+5. Sandboxで購入・キャンセル・復元・再起動後の維持を確認
+
+コードはOfferingの先頭商品ではなく、Product ID `remove_ads` と一致する商品だけを購入します。
+
+## 6. 公開URLと審査情報
+
+次を実在するHTTPS URLへ変更します。
+
+- `fastlane/metadata/ja/privacy_url.txt`
+- `fastlane/metadata/ja/support_url.txt`
+- `fastlane/metadata/ja/marketing_url.txt`
+
+次も入力します。
+
+- `fastlane/metadata/review_information/first_name.txt`
+- `last_name.txt`
+- `phone_number.txt`
+- `email_address.txt`
+
+## 7. App Store提出前の機械チェック
+
+```bash
+npm run validate:appstore
+```
+
+本番ID、公開URL、審査連絡先、Privacy Manifest、iPhone専用設定、雛形文言の残存を検査します。1件でも未完了なら終了コード1で停止します。
+
+## 8. Archive・TestFlight
+
+```bash
+bundle install
+bundle exec fastlane release
+```
+
+またはXcodeで次を実行します。
+
+1. Product → Archive
+2. Validate App
+3. Distribute App → App Store Connect → Upload
+4. TestFlightで実機確認
+5. アプリ本体とIAP `remove_ads` を同時に審査提出
+
+## 最終実機チェック
+
+- 新規インストール／アップデート
+- 習慣の追加・編集・削除・並べ替え
+- 今日と過去日の記録、日付またぎ、タイムゾーン変更
+- 高速連打で記録が壊れない
+- エクスポート／インポート
+- オフライン起動
+- VoiceOver、文字サイズ、Reduce Motion
+- 広告同意、広告表示、購入、復元、購入済み再起動
