@@ -3,7 +3,7 @@ import type { AppApi } from '../lib/useAppData'
 import { Sheet } from './Sheet'
 import { exportData, parseImport } from '../lib/storage'
 import { usePremium } from '../lib/usePremium'
-import { getAdPrivacyState, hideBanner, showAdPrivacyOptions } from '../lib/ads'
+import { getAdPrivacyState, hideBanner, showAdPrivacyOptions, showBanner } from '../lib/ads'
 import {
   URL_PRIVACY,
   URL_TERMS,
@@ -49,7 +49,15 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   async function manageAdPrivacy() {
     const state = await showAdPrivacyOptions()
     setPrivacyOptionsRequired(state.privacyOptionsRequired)
-    if (!state.canRequestAds) await hideBanner()
+
+    if (state.canRequestAds) {
+      const shown = await showBanner()
+      document.documentElement.style.setProperty('--ad-h', shown ? '60px' : '0px')
+    } else {
+      await hideBanner()
+      document.documentElement.style.setProperty('--ad-h', '0px')
+    }
+
     setMsg('広告のプライバシー設定を更新しました')
   }
 
