@@ -5,6 +5,7 @@ const STORAGE_KEY = 'habit-stamp:v1'
 const SCHEMA_VERSION = 1
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/
+const RESERVED_IDS = new Set(Object.getOwnPropertyNames(Object.prototype))
 const MAX_TITLE_LENGTH = 24
 const MAX_EMOJI_LENGTH = 16
 
@@ -44,6 +45,10 @@ function isValidDateKey(value: string): boolean {
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
 }
 
+function isSafeId(value: unknown): value is string {
+  return typeof value === 'string' && SAFE_ID_RE.test(value) && !RESERVED_IDS.has(value)
+}
+
 function sanitizeHabits(input: unknown): Habit[] {
   if (!Array.isArray(input)) return []
 
@@ -53,7 +58,7 @@ function sanitizeHabits(input: unknown): Habit[] {
   input.forEach((h, index) => {
     if (!h || typeof h !== 'object') return
     const o = h as Record<string, unknown>
-    if (typeof o.id !== 'string' || !SAFE_ID_RE.test(o.id) || seen.has(o.id)) return
+    if (!isSafeId(o.id) || seen.has(o.id)) return
     seen.add(o.id)
 
     const rawTitle = typeof o.title === 'string' ? o.title.trim() : ''
