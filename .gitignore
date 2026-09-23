@@ -27,3 +27,4 @@ fastlane/test_output
 _gen_*.mjs
 _verify*.mjs
 _shot*.mjs
+.test-dist

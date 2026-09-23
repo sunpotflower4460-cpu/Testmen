@@ -12,6 +12,8 @@ export interface HabitInput {
 
 export interface AppApi {
   data: AppData
+  /** 直近の保存に失敗したか（容量不足など） */
+  saveFailed: boolean
   addHabit: (input: HabitInput) => void
   updateHabit: (id: string, input: HabitInput) => void
   deleteHabit: (id: string) => void
@@ -26,6 +28,7 @@ export interface AppApi {
 export function useAppData(): AppApi {
   const [data, setData] = useState<AppData>(() => loadData())
   const dataRef = useRef(data)
+  const [saveFailed, setSaveFailed] = useState(false)
 
   const commitData = useCallback((update: (previous: AppData) => AppData) => {
     const previous = dataRef.current
@@ -33,7 +36,9 @@ export function useAppData(): AppApi {
     if (next === previous) return
 
     dataRef.current = next
-    if (!saveData(next)) console.warn('Failed to persist app data')
+    const saved = saveData(next)
+    if (!saved) console.warn('Failed to persist app data')
+    setSaveFailed(!saved)
     setData(next)
   }, [])
 
@@ -130,6 +135,7 @@ export function useAppData(): AppApi {
 
   return {
     data,
+    saveFailed,
     addHabit,
     updateHabit,
     deleteHabit,

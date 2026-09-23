@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AppApi } from '../lib/useAppData'
 import { Sheet } from './Sheet'
+import { LegalLink } from './LegalLink'
 import { exportData, parseImport } from '../lib/storage'
 import { toKey } from '../lib/date'
 import { usePremium } from '../lib/usePremium'
@@ -66,13 +67,8 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
       const state = await showAdPrivacyOptions()
       setPrivacyOptionsRequired(state.privacyOptionsRequired)
 
-      if (state.canRequestAds) {
-        const shown = await showBanner()
-        document.documentElement.style.setProperty('--ad-h', shown ? '60px' : '0px')
-      } else {
-        await hideBanner()
-        document.documentElement.style.setProperty('--ad-h', '0px')
-      }
+      if (state.canRequestAds) await showBanner()
+      else await hideBanner()
 
       setMsg('広告のプライバシー設定を更新しました')
     } finally {
@@ -270,12 +266,12 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
             <button className="linkrow" onClick={contact} disabled={busy !== null}>
               <span>お問い合わせ</span><span className="linkrow__chev" aria-hidden>›</span>
             </button>
-            <a className="linkrow" href={URL_TERMS} target="_blank" rel="noreferrer">
+            <LegalLink className="linkrow" href={URL_TERMS} title="利用規約">
               <span>利用規約</span><span className="linkrow__chev" aria-hidden>›</span>
-            </a>
-            <a className="linkrow" href={URL_PRIVACY} target="_blank" rel="noreferrer">
+            </LegalLink>
+            <LegalLink className="linkrow" href={URL_PRIVACY} title="プライバシーポリシー">
               <span>プライバシーポリシー</span><span className="linkrow__chev" aria-hidden>›</span>
-            </a>
+            </LegalLink>
           </div>
         </div>
 

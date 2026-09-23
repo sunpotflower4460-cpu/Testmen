@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Sheet } from './Sheet'
 import { usePremium } from '../lib/usePremium'
 import { URL_PRIVACY, URL_TERMS } from '../lib/config'
+import { LegalLink } from './LegalLink'
 
 interface Props {
   onClose: () => void
@@ -72,9 +73,9 @@ export function Paywall({ onClose }: Props) {
 
         <p className="paywall__legal">
           購入すると
-          <a href={URL_TERMS} target="_blank" rel="noreferrer">利用規約</a>
+          <LegalLink href={URL_TERMS} title="利用規約">利用規約</LegalLink>
           と
-          <a href={URL_PRIVACY} target="_blank" rel="noreferrer">プライバシーポリシー</a>
+          <LegalLink href={URL_PRIVACY} title="プライバシーポリシー">プライバシーポリシー</LegalLink>
           に同意したものとみなされます。支払いは Apple ID に請求されます。
         </p>
       </div>

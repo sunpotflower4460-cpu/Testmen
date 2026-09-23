@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { backupRawData, STORAGE_KEY } from '../lib/storage'
 
 interface Props {
   children: ReactNode
@@ -19,8 +20,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   reset = () => {
+    if (!confirm('記録をすべて消去して初期状態に戻します。よろしいですか？')) return
     try {
-      localStorage.removeItem('habit-stamp:v1')
+      // 念のため原文を退避してから消去する（上書きされるまで復旧の余地を残す）。
+      backupRawData()
+      localStorage.removeItem(STORAGE_KEY)
     } catch {
       // ignore
     }

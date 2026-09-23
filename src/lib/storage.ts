@@ -1,7 +1,9 @@
 import type { AppData, Habit, Records, Settings } from './types.js'
 import { DEFAULT_COLOR_ID, getColor } from './palette.js'
 
-const STORAGE_KEY = 'habit-stamp:v1'
+export const STORAGE_KEY = 'habit-stamp:v1'
+// 読めなかった保存データを上書きで失わないよう退避しておくキー。
+export const RECOVERY_KEY = 'habit-stamp:v1:recovery'
 const SCHEMA_VERSION = 1
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/
@@ -24,13 +26,28 @@ export function emptyData(): AppData {
 }
 
 export function loadData(): AppData {
+  let raw: string | null = null
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return emptyData()
     const parsed = JSON.parse(raw) as Partial<AppData>
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('invalid data')
     return normalize(parsed)
   } catch {
+    if (raw) backupRawData(raw)
     return emptyData()
+  }
+}
+
+/** 保存データの原文を退避する。次の保存で消えてしまう前に、復旧の手がかりを残す。 */
+export function backupRawData(raw: string | null = null): boolean {
+  try {
+    const value = raw ?? localStorage.getItem(STORAGE_KEY)
+    if (!value) return false
+    localStorage.setItem(RECOVERY_KEY, value)
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -127,7 +144,12 @@ export function exportData(data: AppData): string {
 }
 
 export function parseImport(text: string): AppData {
-  const parsed = JSON.parse(text)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text.replace(/^\uFEFF/, ''))
+  } catch {
+    throw new Error('JSONファイルとして読み込めませんでした')
+  }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     throw new Error('不正な形式です')
   }

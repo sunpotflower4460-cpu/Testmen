@@ -13,6 +13,7 @@ import {
   buyPremium,
   restorePremium,
   resetDemoPremium,
+  watchPremium,
   type PurchaseOutcome,
 } from './purchases'
 import { isNative } from './platform'
@@ -38,16 +39,26 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let alive = true
+    let unwatch: (() => void) | null = null
     ;(async () => {
-      await initPurchases()
-      const [p, pr] = await Promise.all([checkPremium(), getPremiumPrice()])
-      if (!alive) return
-      setPremium(p)
-      setPrice(pr)
-      setLoading(false)
+      try {
+        await initPurchases()
+        const [p, pr] = await Promise.all([checkPremium(), getPremiumPrice()])
+        if (!alive) return
+        setPremium(p)
+        setPrice(pr)
+      } finally {
+        if (alive) setLoading(false)
+      }
+      const stop = await watchPremium((next) => {
+        if (alive) setPremium(next)
+      })
+      if (alive) unwatch = stop
+      else stop()
     })()
     return () => {
       alive = false
+      unwatch?.()
     }
   }, [])
 
@@ -59,7 +70,8 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   const restore = useCallback(async () => {
     const ok = await restorePremium()
-    setPremium(ok)
+    // 通信失敗などで「見つからない」場合に、購入済みの状態を取り消さない。
+    if (ok) setPremium(true)
     return ok
   }, [])
 
