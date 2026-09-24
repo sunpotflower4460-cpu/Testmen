@@ -39,7 +39,7 @@ Xcodeの **Signing & Capabilities** で次を確認します。
 
 - Team：自分のApple Developerチーム
 - Bundle Identifier：`com.sunpotflower.stamphabit`
-- Version / Build：`1.0.0 / 1`
+- Version / Build：`1.0 / 1`（App Store Connect のバージョン表記と一致させる）
 - Supported Destinations：iPhone
 - In-App Purchase capability：追加済みであることを確認
 
