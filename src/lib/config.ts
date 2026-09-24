@@ -37,4 +37,4 @@ export const APP_STORE_ID = ''
 export const PREMIUM_PRICE_LABEL = '¥300'
 
 // アプリのバージョン表記（App Store のバージョンと揃える）
-export const APP_VERSION = '1.0.0'
+export const APP_VERSION = '1.0'
