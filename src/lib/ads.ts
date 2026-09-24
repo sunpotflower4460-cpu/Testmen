@@ -13,6 +13,58 @@ const EMPTY_PRIVACY_STATE: AdPrivacyState = {
 
 let preparation: Promise<AdPrivacyState> | null = null
 let lastPrivacyState: AdPrivacyState | null = null
+// バナーを表示してよい状態か。非表示要求後に遅れて読み込まれた広告を片付けるのに使う。
+let bannerWanted = false
+let sizeListener: Promise<void> | null = null
+
+/**
+ * ネイティブバナーの実測高さを画面下部の余白に反映する。
+ * バナーはセーフエリア下端に固定されるため、ホームインジケータ分の余白は
+ * タブバーではなくバナーの下に置く（CSSの html.has-ad を参照）。
+ */
+function applyAdInset(height: number): void {
+  const px = Math.max(0, Math.round(height))
+  const root = document.documentElement
+  root.style.setProperty('--ad-h', `${px}px`)
+  root.classList.toggle('has-ad', px > 0)
+}
+
+function ensureSizeListener(): Promise<void> {
+  if (!sizeListener) {
+    sizeListener = (async () => {
+      const { AdMob, BannerAdPluginEvents } = await import('@capacitor-community/admob')
+      await AdMob.addListener(BannerAdPluginEvents.SizeChanged, (size) => {
+        if (!bannerWanted) {
+          applyAdInset(0)
+          if (size.height > 0) void AdMob.removeBanner().catch(() => undefined)
+          return
+        }
+        applyAdInset(size.height)
+      })
+    })().catch((error) => {
+      sizeListener = null
+      console.warn('AdMob size listener failed', error)
+    })
+  }
+  return sizeListener
+}
+
+/** ATT・同意フォームは、アプリがアクティブになる前に要求すると表示されないことがある。 */
+async function waitUntilAppActive(): Promise<void> {
+  try {
+    const { App } = await import('@capacitor/app')
+    if ((await App.getState()).isActive) return
+    await new Promise<void>((resolve) => {
+      const handle = App.addListener('appStateChange', (state) => {
+        if (!state.isActive) return
+        void handle.then((h) => h.remove())
+        resolve()
+      })
+    })
+  } catch {
+    // 状態を取得できない場合はそのまま続行する。
+  }
+}
 
 function requiresPrivacyOptions(status: string): boolean {
   return status === 'REQUIRED'
@@ -22,6 +74,7 @@ async function prepareAdsInternal(): Promise<AdPrivacyState> {
   const { AdMob } = await import('@capacitor-community/admob')
 
   await AdMob.initialize({})
+  await waitUntilAppActive()
 
   let consentInfo = await AdMob.requestConsentInfo()
   if (!consentInfo.canRequestAds && consentInfo.isConsentFormAvailable) {
@@ -62,11 +115,14 @@ export async function prepareAds(): Promise<AdPrivacyState> {
 
 export async function showBanner(): Promise<boolean> {
   if (!isNative()) return false
+  bannerWanted = true
   const privacy = await prepareAds()
-  if (!privacy.canRequestAds) return false
+  if (!privacy.canRequestAds || !bannerWanted) return false
 
   try {
+    await ensureSizeListener()
     const { AdMob, BannerAdPosition, BannerAdSize } = await import('@capacitor-community/admob')
+    if (!bannerWanted) return false
     const useTest = !ADMOB_BANNER_IOS
     await AdMob.showBanner({
       adId: ADMOB_BANNER_IOS || ADMOB_BANNER_TEST,
@@ -84,6 +140,8 @@ export async function showBanner(): Promise<boolean> {
 
 export async function hideBanner(): Promise<void> {
   if (!isNative()) return
+  bannerWanted = false
+  applyAdInset(0)
   try {
     const { AdMob } = await import('@capacitor-community/admob')
     await AdMob.removeBanner()

@@ -78,7 +78,6 @@ input {
   max-width: 560px;
   margin: 0 auto;
   position: relative;
-  padding-bottom: var(--ad-h); /* ネイティブ広告バナーの領域を下部に確保 */
   background: linear-gradient(180deg, rgba(255, 253, 248, 0.4), transparent 220px);
 }
 
@@ -120,6 +119,18 @@ input {
   font-size: 12px;
   color: var(--ink-muted);
   margin-top: 1px;
+}
+
+.save-error {
+  flex: none;
+  margin: 8px 16px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #fbe7e2;
+  color: #9a2a1d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 .app-main {
@@ -709,6 +720,56 @@ input {
 }
 .tabbar__fab:active {
   transform: translateY(-14px) scale(0.9);
+}
+
+/* ネイティブ広告バナー表示中。
+   バナーはセーフエリア下端に固定されるため「バナー＋ホームインジケータ」分を確保し、
+   タブバー自身のセーフエリア余白は外す（重なるとタブの誤タップ＝広告の誤クリックになる）。 */
+html.has-ad .app {
+  padding-bottom: calc(var(--ad-h) + env(safe-area-inset-bottom));
+}
+html.has-ad .tabbar {
+  height: var(--tabbar-h);
+  padding-bottom: 0;
+}
+html.has-ad .sheet {
+  bottom: calc(var(--ad-h) + env(safe-area-inset-bottom));
+}
+html.has-ad .sheet__panel {
+  padding-bottom: 24px;
+}
+
+/* 利用規約・プライバシーポリシーのアプリ内ビューア（iOS） */
+.legal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  padding-top: env(safe-area-inset-top);
+}
+html.has-ad .legal {
+  bottom: calc(var(--ad-h) + env(safe-area-inset-bottom));
+}
+.legal__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-h);
+  padding: 0 12px 0 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.legal__title {
+  font-size: 17px;
+  font-weight: 800;
+}
+.legal__frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: var(--paper);
 }
 
 /* ============================================================

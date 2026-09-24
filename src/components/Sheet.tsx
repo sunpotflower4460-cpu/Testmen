@@ -12,6 +12,9 @@ const FOCUSABLE =
 /** 下から出るモーダルシート。背景タップ／Escで閉じる。フォーカストラップ付き。 */
 export function Sheet({ title, onClose, children }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
+  // 親の再描画ごとに onClose が作り直されても、フォーカス移動・スクロール固定をやり直さない。
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     const panel = panelRef.current
@@ -24,7 +27,7 @@ export function Sheet({ title, onClose, children }: Props) {
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose()
+        onCloseRef.current()
         return
       }
       if (e.key !== 'Tab' || !panel) return
@@ -54,7 +57,7 @@ export function Sheet({ title, onClose, children }: Props) {
       // 閉じたら呼び出し元へフォーカスを戻す
       prevFocus?.focus?.()
     }
-  }, [onClose])
+  }, [])
 
   return (
     <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>

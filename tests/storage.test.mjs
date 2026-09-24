@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { emptyData, parseImport, saveData } from '../.test-dist/src/lib/storage.js'
+import { emptyData, loadData, parseImport, RECOVERY_KEY, saveData, STORAGE_KEY } from '../.test-dist/src/lib/storage.js'
 
 test('import normalizes malformed habits and records', () => {
   const data = parseImport(JSON.stringify({
@@ -76,6 +76,36 @@ test('saveData reports both persistence success and failure', () => {
       },
     })
     assert.equal(saveData(emptyData()), false)
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'localStorage', original)
+    else delete globalThis.localStorage
+  }
+})
+
+test('broken JSON is rejected with a user-facing message, and a BOM is tolerated', () => {
+  assert.throws(() => parseImport('{"habits": ['), { message: 'JSONファイルとして読み込めませんでした' })
+  const data = parseImport('\uFEFF{"version":1,"habits":[],"records":{}}')
+  assert.deepEqual(data.habits, [])
+})
+
+test('unreadable stored data is kept aside before it can be overwritten', () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+  const store = new Map([[STORAGE_KEY, '{"habits": [truncated']])
+
+  try {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key) => store.get(key) ?? null,
+        setItem: (key, value) => store.set(key, value),
+      },
+    })
+    assert.deepEqual(loadData(), emptyData())
+    assert.equal(store.get(RECOVERY_KEY), '{"habits": [truncated')
+
+    store.set(STORAGE_KEY, 'null')
+    assert.deepEqual(loadData(), emptyData())
+    assert.equal(store.get(RECOVERY_KEY), 'null')
   } finally {
     if (original) Object.defineProperty(globalThis, 'localStorage', original)
     else delete globalThis.localStorage

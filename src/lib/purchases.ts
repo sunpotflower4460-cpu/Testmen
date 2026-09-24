@@ -132,6 +132,28 @@ export async function restorePremium(): Promise<boolean> {
   }
 }
 
+/**
+ * 購入状態の変化（別端末での購入・返金・オファーコード引き換え等）を購読する。
+ * 戻り値で購読を解除できる。
+ */
+export async function watchPremium(onChange: (premium: boolean) => void): Promise<() => void> {
+  if (!isNative()) return () => undefined
+  try {
+    await initPurchases()
+    if (!configured) return () => undefined
+    const { Purchases } = await import('@revenuecat/purchases-capacitor')
+    const listenerToRemove = await Purchases.addCustomerInfoUpdateListener((customerInfo) => {
+      onChange(customerInfo.entitlements.active[ENTITLEMENT_PREMIUM] !== undefined)
+    })
+    return () => {
+      void Purchases.removeCustomerInfoUpdateListener({ listenerToRemove }).catch(() => undefined)
+    }
+  } catch (error) {
+    console.warn('watchPremium failed', error)
+    return () => undefined
+  }
+}
+
 export async function resetDemoPremium(): Promise<void> {
   if (!isNative()) setDemoPremium(false)
 }

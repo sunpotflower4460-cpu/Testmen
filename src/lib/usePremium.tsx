@@ -13,16 +13,19 @@ import {
   buyPremium,
   restorePremium,
   resetDemoPremium,
+  watchPremium,
   type PurchaseOutcome,
 } from './purchases'
 import { isNative } from './platform'
-import { PREMIUM_PRICE_LABEL } from './config'
+import { MONETIZATION_ENABLED, PREMIUM_PRICE_LABEL } from './config'
 
 interface PremiumState {
   premium: boolean
   price: string
   loading: boolean
   isNative: boolean
+  /** 広告・課金を提供しているか（config.ts の MONETIZATION_ENABLED） */
+  monetization: boolean
   purchase: () => Promise<PurchaseOutcome>
   restore: () => Promise<boolean>
   /** Webデモ専用：プレミアムを解除して再確認できるように */
@@ -34,20 +37,31 @@ const Ctx = createContext<PremiumState | null>(null)
 export function PremiumProvider({ children }: { children: ReactNode }) {
   const [premium, setPremium] = useState(false)
   const [price, setPrice] = useState(PREMIUM_PRICE_LABEL)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(MONETIZATION_ENABLED)
 
   useEffect(() => {
+    if (!MONETIZATION_ENABLED) return undefined
     let alive = true
+    let unwatch: (() => void) | null = null
     ;(async () => {
-      await initPurchases()
-      const [p, pr] = await Promise.all([checkPremium(), getPremiumPrice()])
-      if (!alive) return
-      setPremium(p)
-      setPrice(pr)
-      setLoading(false)
+      try {
+        await initPurchases()
+        const [p, pr] = await Promise.all([checkPremium(), getPremiumPrice()])
+        if (!alive) return
+        setPremium(p)
+        setPrice(pr)
+      } finally {
+        if (alive) setLoading(false)
+      }
+      const stop = await watchPremium((next) => {
+        if (alive) setPremium(next)
+      })
+      if (alive) unwatch = stop
+      else stop()
     })()
     return () => {
       alive = false
+      unwatch?.()
     }
   }, [])
 
@@ -59,7 +73,8 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   const restore = useCallback(async () => {
     const ok = await restorePremium()
-    setPremium(ok)
+    // 通信失敗などで「見つからない」場合に、購入済みの状態を取り消さない。
+    if (ok) setPremium(true)
     return ok
   }, [])
 
@@ -70,7 +85,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ premium, price, loading, isNative: isNative(), purchase, restore, resetDemo }}
+      value={{ premium, price, loading, isNative: isNative(), monetization: MONETIZATION_ENABLED, purchase, restore, resetDemo }}
     >
       {children}
     </Ctx.Provider>

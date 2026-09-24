@@ -65,6 +65,12 @@ export default function App() {
         </button>
       </header>
 
+      {api.saveFailed && (
+        <p className="save-error" role="alert">
+          記録を端末に保存できませんでした。空き容量を確認し、設定のエクスポートでバックアップしてください。
+        </p>
+      )}
+
       <main className="app-main">
         {tab === 'today' ? (
           <TodayView
