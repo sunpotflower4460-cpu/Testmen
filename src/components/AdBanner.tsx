@@ -7,11 +7,11 @@ interface Props {
 }
 
 export function AdBanner({ onUpgrade }: Props) {
-  const { premium, loading, isNative } = usePremium()
+  const { premium, loading, isNative, monetization } = usePremium()
 
   useEffect(() => {
     // 余白（--ad-h）はネイティブバナーの実測サイズに合わせて ads.ts が更新する。
-    if (!isNative || loading) return undefined
+    if (!monetization || !isNative || loading) return undefined
     if (premium) {
       void hideBanner()
       return undefined
@@ -21,9 +21,9 @@ export function AdBanner({ onUpgrade }: Props) {
     return () => {
       void hideBanner()
     }
-  }, [isNative, loading, premium])
+  }, [monetization, isNative, loading, premium])
 
-  if (loading || premium) return null
+  if (!monetization || loading || premium) return null
   if (isNative) return null
 
   return (

@@ -3,6 +3,9 @@
 このリポジトリには、CapacitorのiOSプロジェクト、アイコン、Privacy Manifest、App Storeメタデータ、広告・課金の実装が含まれています。
 初版は **iPhone専用** とし、iPad用スクリーンショット不足による提出ブロックを避けます。
 
+> はじめての方は、まず [docs/SUBMISSION_GUIDE.md](./docs/SUBMISSION_GUIDE.md) を上から進めてください。
+> 初版は広告・課金なしのため、下の「4. AdMob」「5. RevenueCat」は不要です。
+
 ## 0. 必要環境
 
 - Node.js 22以上

@@ -25,7 +25,7 @@ const MAX_IMPORT_BYTES = 5 * 1024 * 1024
 
 export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   const { settings } = api.data
-  const { premium, restore, isNative, loading } = usePremium()
+  const { premium, restore, isNative, loading, monetization } = usePremium()
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false)
@@ -33,7 +33,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
 
   useEffect(() => {
     let active = true
-    if (!isNative || premium || loading) {
+    if (!monetization || !isNative || premium || loading) {
       setPrivacyOptionsRequired(false)
       return undefined
     }
@@ -45,7 +45,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
     return () => {
       active = false
     }
-  }, [isNative, loading, premium])
+  }, [monetization, isNative, loading, premium])
 
   async function doRestore() {
     if (busy) return
@@ -83,10 +83,6 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   }
 
   function rate() {
-    if (!APP_STORE_ID) {
-      setMsg('公開後にレビューできるようになります')
-      return
-    }
     location.href = `https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`
   }
 
@@ -198,7 +194,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
           </div>
         </div>
 
-        {premium ? (
+        {!monetization ? null : premium ? (
           <div className="premium-card premium-card--owned">
             <span className="premium-card__badge" aria-hidden>✨</span>
             <div className="premium-card__text">
@@ -250,7 +246,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
         <div className="settings__group">
           <span className="settings__group-title">情報・サポート</span>
           <div className="settings__links">
-            {!premium && (
+            {monetization && !premium && (
               <button className="linkrow" onClick={doRestore} disabled={busy !== null}>
                 <span>{busy === 'restore' ? '購入を確認中…' : '購入を復元'}</span><span className="linkrow__chev" aria-hidden>›</span>
               </button>
@@ -260,9 +256,12 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
                 <span>{busy === 'privacy' ? '設定を確認中…' : '広告のプライバシー設定'}</span><span className="linkrow__chev" aria-hidden>›</span>
               </button>
             )}
-            <button className="linkrow" onClick={rate} disabled={busy !== null}>
-              <span>アプリを評価する</span><span className="linkrow__chev" aria-hidden>›</span>
-            </button>
+            {/* 公開前は評価ページが存在しないため出さない（審査で「未完成の機能」と見なされるのを避ける） */}
+            {APP_STORE_ID && (
+              <button className="linkrow" onClick={rate} disabled={busy !== null}>
+                <span>アプリを評価する</span><span className="linkrow__chev" aria-hidden>›</span>
+              </button>
+            )}
             <button className="linkrow" onClick={contact} disabled={busy !== null}>
               <span>お問い合わせ</span><span className="linkrow__chev" aria-hidden>›</span>
             </button>
