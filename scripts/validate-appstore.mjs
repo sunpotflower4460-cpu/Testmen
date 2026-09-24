@@ -83,13 +83,13 @@ for (const path of [
   requireCheck(/^https:\/\//.test(value) && !value.includes('example.'), `${path} を実在するHTTPS URLへ変更してください。`)
 }
 
+// 審査用の連絡先（氏名・電話番号）は公開リポジトリに置かず、App Store Connect に直接入力する。
 for (const path of [
   'fastlane/metadata/review_information/first_name.txt',
   'fastlane/metadata/review_information/last_name.txt',
   'fastlane/metadata/review_information/phone_number.txt',
-  'fastlane/metadata/review_information/email_address.txt',
 ]) {
-  requireCheck(read(path).trim().length > 0, `${path} を入力してください。`)
+  requireCheck(read(path).trim().length === 0, `${path} に個人情報を書かないでください（公開リポジトリのため）。App Store Connect に直接入力します。`)
 }
 
 if (errors.length > 0) {
