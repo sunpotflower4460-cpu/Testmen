@@ -285,9 +285,21 @@ input {
   transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .progress__fill--full {
-  background: linear-gradient(90deg, #f0a24a, #e0402f, #f0764a);
-  background-size: 200% 100%;
-  animation: shimmer 1.6s linear infinite;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f0a24a, #e0402f);
+}
+/* 全達成時：細い光が左から右へ一度だけ通り、しばらく休む（ささやかなキラッ） */
+.progress__fill--full::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -30%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  opacity: 0;
+  animation: glint 4.5s ease-in-out 0.8s infinite;
 }
 .progress__done {
   margin-top: 10px;
@@ -1137,9 +1149,11 @@ html.has-ad .legal {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
-@keyframes shimmer {
-  from { background-position: 0 0; }
-  to { background-position: 200% 0; }
+@keyframes glint {
+  0% { transform: translateX(0); opacity: 0; }
+  4% { opacity: 1; }
+  24% { opacity: 1; }
+  28%, 100% { transform: translateX(433%); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
