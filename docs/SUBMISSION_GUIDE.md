@@ -26,7 +26,7 @@ App Store の審査では、ブラウザで開けるプライバシーポリシ�
   | Build command | `npm run build` |
   | Build output directory | `dist` |
 
-- [ ] 1-6. 表示された URL（例：`https://testmen.pages.dev`）を開き、`/privacy.html` と `/terms.html` が表示されることを確認
+- [ ] 1-6. 表示された URL（このアプリでは `https://testmen.sunpotflower4460.workers.dev`）を開き、`/privacy.html` と `/terms.html` が表示されることを確認
 - [ ] 1-7. その URL を Claude に伝える → 🤖 申請用の URL 3つを書き換えます
 
 ## ステップ 2. 審査担当者への連絡先（🧑 ステップ3の中で入力）
