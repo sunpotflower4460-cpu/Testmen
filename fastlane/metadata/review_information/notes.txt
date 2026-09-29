@@ -1,6 +1,22 @@
-本アプリはアカウント登録不要で、すべての機能をそのままご確認いただけます。
+No login or account is required. All features are available immediately.
 
-・画面下中央の「＋」から習慣を追加し、今日画面のハンコをタップすると記録されます。
-・カレンダータブで日付×習慣の記録を確認・過去日の記録ができます。
-・広告・App内課金・トラッキングはありません。
-・記録データは端末内(ローカル)に保存され、外部送信はありません。
+Purpose and target audience:
+"Stamp Habit" is a simple habit tracker for anyone who wants to build daily habits (e.g., reading, exercise, drinking water). It focuses on one question — "Did I do it today?" — and lets users record it with a single tap of a Japanese-style stamp (hanko). A calendar matrix (dates x habits) and streak counts show progress at a glance.
+
+How to use:
+- Tap "+" at the bottom to create a habit (title, stamp emoji, ink color).
+- On the Today tab, tap the large stamp to mark the habit as done today; tap again to undo.
+- On the Calendar tab, view records by date and tap past cells to add or remove records.
+- Tap "..." on a habit card to edit, reorder, or delete it.
+- Tap the gear icon for settings: remove ads (in-app purchase), restore purchases, sound effects, data export/import (JSON backup), terms of use, and privacy policy.
+
+Ads and in-app purchase (new in 1.1):
+- A banner ad (Google AdMob) is shown at the bottom of the screen. The App Tracking Transparency prompt is shown before personalized ads are requested; ads are still shown (non-personalized) if the user declines.
+- "Remove Ads" (Product ID: remove_ads) is a one-time non-consumable in-app purchase that permanently hides all ads. It can be purchased from Settings (gear icon > "広告を消す（プレミアム）") and restored via "購入を復元" in Settings.
+- Purchases are processed by Apple and managed with RevenueCat.
+
+External services:
+Google AdMob (advertising), RevenueCat (in-app purchase management). Habit data is stored locally on the device and never sent to any server.
+
+Regional differences:
+The app functions identically in all regions. Currently distributed in Japan only; the UI is in Japanese.

@@ -7,7 +7,7 @@
 // ---- 広告・課金の有効化スイッチ ----
 // false の間は AdMob / RevenueCat を一切起動せず、広告・「広告を消す」の画面も出しません。
 // 有効化する手順は docs/MONETIZATION.md を参照してください（ネイティブ側の設定も必要です）。
-export const MONETIZATION_ENABLED = false
+export const MONETIZATION_ENABLED = true
 
 // ---- RevenueCat（アプリ内課金） ----
 // RevenueCat ダッシュボード → API keys の「Public app-specific API key（Apple）」
@@ -37,4 +37,4 @@ export const APP_STORE_ID = ''
 export const PREMIUM_PRICE_LABEL = '¥300'
 
 // アプリのバージョン表記（App Store のバージョンと揃える）
-export const APP_VERSION = '1.0'
+export const APP_VERSION = '1.1'
