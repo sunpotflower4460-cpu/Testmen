@@ -1,125 +1,147 @@
-# はじめての App Store 申請ガイド（スタンプ習慣 v1.0）
+# App Store 申請ガイド（スタンプ習慣 1.1：広告・課金あり）
 
-初版は **広告・課金なし** の無料アプリとして申請します。
-上から順に進めれば申請まで届くようにしてあります。終わった項目には `[x]` を付けていきましょう。
+1.0（広告なし）は 2026-11-26 に公開済みです。1.1 では、画面下部のバナー広告と、買い切りの「広告を消す」を追加します。
+上から順に進めてください。終わった項目には `[x]` を付けます。
 
-- 🧑 … あなたがブラウザや Mac で行う作業
-- 🤖 … Claude（またはコマンド）が自動で行う作業
+担当の印：【本人】アカウント所有者 ／ 【Muse】掲載情報の担当 ／ 【Claude】リポジトリとビルドの担当
+
+## 現在の状況（2026-11-26）
+
+- [x] バージョンを 1.1（ビルド 2）に変更
+- [x] アプリ内課金「広告を消す」（`com.sunpotflower.stamphabit.removeads`、非消耗型、¥300）を App Store Connect に登録
+- [x] AdMob の GDPR 同意メッセージを公開
+- [x] `SKAdNetworkItems` を Google 公式の一覧と照合（50件）
+- [x] 日本語のスクリーンショットを現行の画面で撮り直し
+- [x] シミュレータ（iOS 26.2）で、ATT の表示、テスト広告、購入・キャンセル・復元（ローカルの StoreKit テスト）を確認
+- [ ] `app-ads.txt` を公開サイトに追加【Claude】（AdMob の画面に表示される1行を受け取ってから）
 
 ---
 
-## ステップ 1. プライバシーポリシーを公開する（🧑 5分）
+## ステップ 1. 実機で確認する（テスト広告のまま）
 
-App Store の審査では、ブラウザで開けるプライバシーポリシーのURLが必須です。
-このリポジトリの `public/privacy.html` を Cloudflare Pages で無料公開します。
+`src/lib/config.ts` の `ADMOB_USE_TEST_ADS` が `true` の開発版を iPhone に入れて確認します【Claude がインストール、本人が操作】。
 
-- [ ] 1-1. 修正ブランチを `main` に取り込む（Cloudflare は `main` の内容を公開します）
-- [ ] 1-2. [Cloudflare ダッシュボード](https://dash.cloudflare.com/) にログイン（無料アカウントでOK）
-- [ ] 1-3. **Workers & Pages** →「作成（Create）」→ **Pages** タブ →「Git に接続（Connect to Git）」
-- [ ] 1-4. GitHub を認可し、リポジトリ `sunpotflower4460-cpu/Testmen` を選択
-- [ ] 1-5. ビルドの設定を次のようにして「保存してデプロイ（Save and Deploy）」
+### 準備【本人】
 
-  | 項目 | 値 |
-  |---|---|
-  | Production branch | `main` |
-  | Framework preset | `None` |
-  | Build command | `npm run build` |
-  | Build output directory | `dist` |
+- [ ] アプリの設定 →「エクスポート」で記録を書き出す（**アプリを削除すると記録は消えます**）
+- [ ] App Store Connect →「ユーザとアクセス」→「Sandbox」でテスト用アカウントを作る
+- [ ] iPhone の Sandbox アカウント欄（設定 → デベロッパ。iOS の版で場所が違います）に、そのアカウントでサインインする
 
-- [ ] 1-6. 表示された URL（このアプリでは `https://testmen.sunpotflower4460.workers.dev`）を開き、`/privacy.html` と `/terms.html` が表示されることを確認
-- [ ] 1-7. その URL を Claude に伝える → 🤖 申請用の URL 3つを書き換えます
+### 課金【本人】
 
-## ステップ 2. 審査担当者への連絡先（🧑 ステップ3の中で入力）
+- [ ] 設定 →「広告を消す」に価格が円で表示される
+- [ ] 購入を途中でキャンセルできる（広告は出たまま）
+- [ ] 購入すると広告が消え、アプリを再起動しても出ない
+- [ ] 「購入を復元」で復元できたと表示される
+- [ ] アプリを削除して入れ直したあと、起動時点で広告が出ないか、「購入を復元」で消える
+- [ ] 書き出したファイルを「インポート」して記録が戻る
 
-このリポジトリは公開されているため、氏名・電話番号はファイルに書かず、
-ステップ3-5 の **「App Review に関する情報」→「連絡先情報」** に直接入力します（審査担当者にだけ見えます）。
+購入をやり直すときは、App Store Connect の Sandbox アカウントで購入履歴を消去します。
 
-- 電話番号は国番号付きで入力します（例：`090-1234-5678` → `+81 90-1234-5678`）
+### 同意メッセージ（UMP）
 
-ステップ1が終わると `npm run validate:appstore` が「通過しました」になります。
+同意メッセージは EEA・英国など、必要な地域でだけ表示されます。日本の端末で出ないのは通常の動作です。
+表示の確認には、欧州として扱うテスト用の一時ビルドを使います【Claude】。この一時ビルドはコミットしません。
 
-## ステップ 3. App Store Connect にアプリを登録する（🧑 15分）
-
-1. [App Store Connect](https://appstoreconnect.apple.com/) →「アプリ」→「＋」→「新規アプリ」
-   - プラットフォーム：iOS
-   - 名前：`スタンプ習慣：毎日をハンコで記録`（使われていたら少し変えて Claude に伝えてください）
-   - 言語：日本語
-   - バンドルID：`com.sunpotflower.stamphabit`
-     - 一覧に出ない場合は、先に [Certificates, IDs & Profiles](https://developer.apple.com/account/resources/identifiers/list) の「Identifiers」→「＋」→ App IDs で同じIDを登録
-   - SKU：`stamphabit001`（自分用の管理番号。なんでもOK）
-   - ユーザーアクセス：フルアクセス
-2. **App プライバシー**（左メニュー）
-   - プライバシーポリシーURL：ステップ1の `…/privacy.html`
-   - 「データの収集」→ **「いいえ、このアプリからデータを収集しません」** → 公開
-3. **価格および配信状況**：価格「無料（0円）」、配信する国（日本だけでも全世界でもOK）
-4. **App 情報**
-   - カテゴリ：プライマリ「ヘルスケア／フィットネス」、セカンダリ「仕事効率化」
-   - 年齢制限：「設定」を押し、質問はすべて **「なし」／「いいえ」** → 4+
-   - コンテンツ配信権：「いいえ（第三者のコンテンツを含まない）」
-5. **1.0 の提出準備**（バージョンのページ）… 次の内容をそのままコピーして貼り付けます
-
-   | 欄 | コピー元ファイル |
-   |---|---|
-   | プロモーション用テキスト | `fastlane/metadata/ja/promotional_text.txt` |
-   | 概要 | `fastlane/metadata/ja/description.txt` |
-   | キーワード | `fastlane/metadata/ja/keywords.txt` |
-   | サポートURL / マーケティングURL | `fastlane/metadata/ja/support_url.txt` / `marketing_url.txt` |
-   | 著作権 | `fastlane/metadata/copyright.txt` |
-   | App Review に関する情報のメモ | `fastlane/metadata/review_information/notes.txt` |
-
-   - 「サインインが必要」は **オフ**
-   - 「App Review に関する情報」の連絡先：姓・名・電話番号（国番号付き）・メールアドレス
-   - スクリーンショット：「iPhone 6.9インチ」の枠に `fastlane/screenshots/ja/` の3枚をドラッグ
-   - 「このバージョンの最新情報」は初版では入力欄がありません（空で大丈夫）
-
-## ステップ 4. Mac でビルドしてアップロードする（🧑 30〜60分）
-
-事前に Mac へ入れておくもの：**Xcode**（App Store から無料）と **Node.js 22**（<https://nodejs.org/>）
-
-```bash
-git clone https://github.com/sunpotflower4460-cpu/Testmen.git
-cd Testmen
-npm ci                 # 依存パッケージを入れる
-npm run check          # ビルドと自動テスト（エラーが出ないこと）
-npm run validate:appstore   # 「通過しました」と出ること
-npx cap sync ios       # 最新の画面を iOS プロジェクトへ反映
-npx cap open ios       # Xcode が開く
-```
-
-Xcode での作業：
-
-1. 左の「App」→ TARGETS「App」→ **Signing & Capabilities**
-   - 「Automatically manage signing」にチェック
-   - Team：自分の Apple Developer チームを選ぶ
-2. 上部の実行先を **自分の iPhone**（USBでつなぐ）にして ▶ を押し、実機で動くか確認
-   - 初回は iPhone の「設定 → プライバシーとセキュリティ → デベロッパモード」をオンにする必要があります
-3. 実行先を **Any iOS Device (arm64)** に変更 → メニュー **Product → Archive**
-4. 完成すると Organizer が開く →「Distribute App」→「App Store Connect」→「Upload」→ 最後まで「Next」
-5. 10〜30分後、App Store Connect の **TestFlight** タブにビルドが出ます
-   - 「輸出コンプライアンス」は設定済みなので質問は出ません
-
-## ステップ 5. 実機で最終確認（🧑 15分）
-
-TestFlight アプリ（App Store から無料）で自分の iPhone に入れて確認します。
+### 基本の動作【本人】
 
 - [ ] 習慣の追加・編集・削除・並び替えができる
 - [ ] ハンコを押す・取り消す（すばやく連打しても記録が壊れない）
 - [ ] カレンダーで過去の日を記録できる
+- [ ] 設定で表示言語を切り替えられる
 - [ ] 設定 →「利用規約」「プライバシーポリシー」が開き、✕ で戻れる
-- [ ] 設定 → エクスポート（共有シートが出る）
-- [ ] 画面の上下（ノッチ・ホームバー）に文字やボタンが隠れていない
-- [ ] アプリを完全に終了して開き直しても、記録が残っている
+- [ ] 広告がタブバーやボタンに重ならない。画面の上下に文字が隠れていない
 - [ ] 機内モードでも起動・記録できる
 
-気になる点があれば、スクリーンショットと一緒に Claude に伝えてください。
+## ステップ 2. App Store Connect を整える
 
-## ステップ 6. 審査に提出（🧑 3分）
+### 契約【本人】
 
-1. App Store Connect → 1.0 の提出準備 →「ビルド」欄の「＋」で TestFlight のビルドを選ぶ
-2. 右上の **「審査用に追加」→「審査へ提出」**
-3. 審査は通常 **1〜3日** です。結果はメールで届きます
-   - 承認されたら「このバージョンをリリース」で公開されます
-   - **リジェクト（差し戻し）されても大丈夫です。** よくあることなので、届いた文面をそのまま Claude に貼ってもらえれば、一緒に直します
+- [ ] 「ビジネス」で、有料アプリ契約・銀行口座・税務情報が有効になっている
+
+### App のプライバシー【Muse】
+
+Google の [App Store のデータ開示](https://developers.google.com/admob/ios/privacy/data-disclosure)（2026-11-12 更新版を確認）を見ながら回答します。
+Google Mobile Ads SDK は、次のデータを収集する場合があります。
+
+| Google の説明 | App Store Connect で対応する分類 |
+|---|---|
+| デバイス ID（広告 ID など） | 識別子 → デバイス ID |
+| 広告データ（閲覧した広告など） | 使用状況データ → 広告データ |
+| アプリの起動やタップなどの操作 | 使用状況データ → 製品の操作 |
+| IP アドレスから分かるおおよその位置 | 位置情報 → おおよその場所 |
+| クラッシュログ | 診断 → クラッシュデータ |
+| 起動時間などのパフォーマンス | 診断 → パフォーマンスデータ |
+
+- [ ] 各データの利用目的と「ユーザに関連付けられるか」を、上のページと画面の説明に合わせて選ぶ
+- [ ] 広告に使う識別子などは「トラッキングに使用する」として申告する（アプリは ATT の許可を求めます）
+- [ ] 回答を「公開」する
+- [ ] プライバシーポリシー URL：`https://testmen.sunpotflower4460.workers.dev/privacy.html`
+
+### 年齢制限【Muse】
+
+- [ ] 質問のうち、広告の有無を問う項目に「あり」と答える（文言は画面で確認する）
+
+### アプリ内課金【Muse】
+
+- [ ] 日本の価格が ¥300 になっている
+- [ ] 表示名と説明を確認する（他の言語の案は [store-listing/README.md](./store-listing/README.md)）
+- [ ] 審査用スクリーンショットが未登録なら登録する
+
+### 1.1 のバージョンページ【Muse】
+
+「＋」で iOS の新しいバージョン `1.1` を作り、次の内容を確認します。
+
+| 欄 | コピー元ファイル |
+|---|---|
+| このバージョンの新機能 | `fastlane/metadata/ja/release_notes.txt` |
+| プロモーション用テキスト | `fastlane/metadata/ja/promotional_text.txt` |
+| 概要 | `fastlane/metadata/ja/description.txt` |
+| キーワード | `fastlane/metadata/ja/keywords.txt` |
+| サポートURL / マーケティングURL | `fastlane/metadata/ja/support_url.txt` / `marketing_url.txt` |
+| App Review に関する情報のメモ | `fastlane/metadata/review_information/notes.txt` |
+
+- [ ] 「このバージョンの新機能」に多言語対応も書くか決める（案は [store-listing/README.md](./store-listing/README.md)）
+- [ ] スクリーンショットを差し替える：6.9インチ枠に `*_1290x2796.png`、6.5インチ枠に `*_1284x2778.png`（`fastlane/screenshots/ja/`）
+- [ ] 「サインインが必要」は **オフ**
+- [ ] 【本人】App Review の連絡先（氏名・電話番号・メール）を画面に直接入力する。このリポジトリは公開されているため、ファイルには書きません
+
+`fastlane` の `upload_metadata` と `release` は、確認なしで掲載文とスクリーンショットを上書きします（`force`）。
+手で入力した内容と突き合わせてから使ってください。
+
+## ステップ 3. 本番広告に切り替えてアップロードする【Claude】
+
+**本人の了承が出てから始めます。** 本番広告にしたビルドでは、自分で広告をタップしないでください。
+
+- [ ] ブランチで `src/lib/config.ts` の `ADMOB_USE_TEST_ADS` を `false` にする
+- [ ] `npm run check` と `npm run validate:appstore` が通る
+- [ ] PR を作り、CI が通ったら1コミットにまとめてマージする
+- [ ] 最新の `main` からビルドする
+
+```bash
+git switch main && git pull
+npm ci
+npm run check
+npm run validate:appstore
+npx cap sync ios
+npx cap open ios
+```
+
+1. TARGETS「App」→ **Signing & Capabilities** で、自動署名とチームを確認する
+2. 実行先を **Any iOS Device (arm64)** にして、**Product → Archive**
+3. Organizer →「Distribute App」→「App Store Connect」→「Upload」
+4. しばらくして **TestFlight** にビルド（1.1 / 2）が出る
+
+同じビルド番号は二度アップロードできません。やり直すときは Xcode の `CURRENT_PROJECT_VERSION` を上げます。
+
+## ステップ 4. 審査に提出する【本人】
+
+1. 1.1 のページの「ビルド」で、アップロードしたビルドを選ぶ
+2. 同じページの「アプリ内課金とサブスクリプション」で「広告を消す」を追加する（アプリと同時に審査へ出します）
+3. **「審査用に追加」→「審査へ提出」**
+4. 承認されたら公開する。差し戻された場合は、届いた文面をそのまま Claude に伝えてください
+
+公開後に、AdMob の画面でアプリと App Store の掲載を紐付け、`app-ads.txt` の確認状況を見ます。
 
 ---
 
@@ -128,8 +150,9 @@ TestFlight アプリ（App Store から無料）で自分の iPhone に入れて
 | 症状 | 対処 |
 |---|---|
 | Xcode で「No account for team」 | Xcode → Settings → Accounts で Apple ID を追加 |
-| 「Bundle ID が使えない」 | ステップ3-1 の Identifiers 登録を確認 |
 | Archive がグレーで押せない | 実行先を「Any iOS Device (arm64)」に変更 |
 | アップロード後 TestFlight に出ない | 30分ほど待つ。Apple からのメール（処理エラー）を確認 |
+| 価格が表示されない | 有料アプリ契約と、アプリ内課金の状態を確認 |
+| 実機で価格がドルになる | Sandbox アカウントの国と地域を確認 |
 
-広告・課金をあとから有効にする手順は [MONETIZATION.md](./MONETIZATION.md) を参照してください。
+広告と課金の仕組みは [MONETIZATION.md](./MONETIZATION.md) を参照してください。

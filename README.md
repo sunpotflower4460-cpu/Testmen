@@ -19,7 +19,7 @@
 
 ## App Store 申請
 
-はじめての申請手順は [docs/SUBMISSION_GUIDE.md](./docs/SUBMISSION_GUIDE.md) にまとめています。
+申請手順（広告・課金ありの版）は [docs/SUBMISSION_GUIDE.md](./docs/SUBMISSION_GUIDE.md) にまとめています。
 
 ## 開発
 
