@@ -3,8 +3,10 @@ import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { URL_PRIVACY, URL_TERMS } from '../.test-dist/src/lib/config.js'
 import { formatLong, formatMonth, formatMonthDay, weekdayLabel } from '../.test-dist/src/lib/date.js'
-import { DICTIONARIES, matchLang, pickLang, pickLocale } from '../.test-dist/src/lib/i18n/index.js'
+import * as i18n from '../.test-dist/src/lib/i18n/index.js'
 import { INK_COLORS } from '../.test-dist/src/lib/palette.js'
+
+const { DICTIONARIES, matchLang, pickLang, pickLocale } = i18n
 
 const LANGS = Object.keys(DICTIONARIES)
 const KANA = /[぀-ヿ]/
@@ -109,6 +111,17 @@ test('captions under a number also read correctly for a count of one', () => {
   assert.equal(DICTIONARIES['pt-BR'].editor.totalStat, 'no total')
 })
 
+test('arrows are shown as text, not as emoji', () => {
+  // 日本語以外はシステムの書体になり、⬇⬆ は絵文字（青い四角）や極端に小さい字形になる。
+  // 日本語の書体は ⬇⬆ を大きな文字の矢印で表示できるので日本語だけで使い、ほかの言語は ↓↑ を使う。
+  for (const lang of LANGS) {
+    const { export: out, import: back } = DICTIONARIES[lang].settings
+    const [down, up] = lang === 'ja' ? ['\u2b07 ', '\u2b06 '] : ['\u2193 ', '\u2191 ']
+    assert.ok(out.startsWith(down), `${lang}: ${out}`)
+    assert.ok(back.startsWith(up), `${lang}: ${back}`)
+  }
+})
+
 test('French punctuation never wraps onto its own line', () => {
   for (const [path, text] of rendered(DICTIONARIES.fr)) {
     assert.ok(!/ [?!:]/.test(text), `fr: ${path}: ${text}`)
@@ -195,5 +208,86 @@ test('each language has its iOS strings, store product name and legal pages', ()
     for (const url of [URL_PRIVACY[lang], URL_TERMS[lang]]) {
       assert.ok(existsSync(new URL(`../public/${url.replace('./', '')}`, import.meta.url)), `${lang}: ${url}`)
     }
+  }
+})
+
+/** テストの間だけ localStorage を差し替える。 */
+async function withStorage(store, run, { failWrites = false } = {}) {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+  const write = (action) => {
+    if (failWrites) throw new Error('quota exceeded')
+    action()
+  }
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key) => store.get(key) ?? null,
+      setItem: (key, value) => write(() => store.set(key, value)),
+      removeItem: (key) => write(() => store.delete(key)),
+    },
+  })
+  try {
+    await run()
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'localStorage', original)
+    else delete globalThis.localStorage
+  }
+}
+
+test('the language picker lists every language', () => {
+  assert.deepEqual(Object.keys(i18n.LANGUAGE_NAMES), LANGS)
+})
+
+test('choosing a language switches text and dates at once, and is remembered', async () => {
+  const store = new Map()
+  let notified = 0
+  const unsubscribe = i18n.subscribeLanguage(() => notified++)
+
+  await withStorage(store, () => {
+    i18n.setLanguageSetting('ko')
+    assert.equal(i18n.lang, 'ko')
+    assert.equal(i18n.t.appName, DICTIONARIES.ko.appName)
+    assert.equal(i18n.dateLocale, 'ko-KR')
+    assert.equal(formatMonth(2026, 10), '2026년 11월')
+    assert.equal(i18n.getLanguageSetting(), 'ko')
+    assert.equal(store.get(i18n.LANGUAGE_KEY), 'ko')
+
+    i18n.setLanguageSetting('ja')
+    assert.equal(formatLong(new Date(2026, 10, 26)), '2026年11月26日(木)')
+
+    i18n.setLanguageSetting('not-a-language')
+    assert.equal(i18n.lang, 'ja')
+    assert.equal(notified, 2)
+
+    i18n.setLanguageSetting('auto')
+    assert.equal(i18n.lang, pickLang(navigator.languages ?? [navigator.language]))
+    assert.equal(store.has(i18n.LANGUAGE_KEY), false)
+    assert.equal(notified, 3)
+  })
+
+  unsubscribe()
+  await withStorage(store, () => i18n.setLanguageSetting('auto'))
+  assert.equal(notified, 3)
+})
+
+test('switching still works when the choice cannot be saved', async () => {
+  await withStorage(new Map(), () => {
+    i18n.setLanguageSetting('de')
+    assert.equal(i18n.lang, 'de')
+    i18n.setLanguageSetting('auto')
+  }, { failWrites: true })
+})
+
+test('a saved choice is applied at startup, and a broken one falls back to automatic', async () => {
+  await withStorage(new Map([[i18n.LANGUAGE_KEY, 'fr']]), async () => {
+    const started = await import('../.test-dist/src/lib/i18n/index.js?saved=fr')
+    assert.equal(started.lang, 'fr')
+    assert.equal(started.getLanguageSetting(), 'fr')
+  })
+  for (const broken of ['xx', 'constructor', '']) {
+    await withStorage(new Map([[i18n.LANGUAGE_KEY, broken]]), async () => {
+      const started = await import(`../.test-dist/src/lib/i18n/index.js?broken=${broken || 'empty'}`)
+      assert.equal(started.getLanguageSetting(), 'auto', broken)
+    })
   }
 })
