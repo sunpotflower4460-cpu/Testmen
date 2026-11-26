@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<!-- アプリ本体は追跡ドメインへ直接接続しないため、Trackingキーは宣言しない。
-	     AdMob / RevenueCat SDKの収集・追跡宣言は各SDK同梱のPrivacy Manifestに委ねる。 -->
+	     AdMob SDKの収集・追跡宣言はSDK同梱のPrivacy Manifestに委ねる（購入はStoreKitのみ）。 -->
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array/>
 	<!-- Required Reason API：設定の保存等で UserDefaults を利用 -->

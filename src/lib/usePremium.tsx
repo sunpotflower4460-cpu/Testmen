@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from 'react'
 import {
-  initPurchases,
   checkPremium,
   getPremiumPrice,
   buyPremium,
@@ -44,15 +43,17 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     let alive = true
     let unwatch: (() => void) | null = null
     ;(async () => {
+      // 購入状態は端末内の権利情報だけで先に確定させ、広告の表示可否をすぐ決める。
+      // 価格の取得（通信あり）は待たない。
       try {
-        await initPurchases()
-        const [p, pr] = await Promise.all([checkPremium(), getPremiumPrice()])
-        if (!alive) return
-        setPremium(p)
-        setPrice(pr)
+        const p = await checkPremium()
+        if (alive) setPremium(p)
       } finally {
         if (alive) setLoading(false)
       }
+      void getPremiumPrice().then((pr) => {
+        if (alive) setPrice(pr)
+      })
       const stop = await watchPremium((next) => {
         if (alive) setPremium(next)
       })

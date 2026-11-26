@@ -13,8 +13,8 @@ const project = read('ios/App/App.xcodeproj/project.pbxproj')
 const privacyPolicy = read('public/privacy.html')
 const terms = read('public/terms.html')
 
-const revenueCatKey = config.match(/REVENUECAT_IOS_API_KEY\s*=\s*'([^']+)'/)?.[1] ?? ''
-const admobBannerId = config.match(/ADMOB_BANNER_IOS\s*=\s*'([^']*)'/)?.[1] ?? ''
+const admobBannerId = config.match(/ADMOB_BANNER_PRODUCTION\s*=\s*'([^']*)'/)?.[1] ?? ''
+const productId = config.match(/PRODUCT_REMOVE_ADS\s*=\s*'([^']*)'/)?.[1] ?? ''
 const ADMOB_TEST_BANNER_ID = 'ca-app-pub-3940256099942544/2934735716'
 const ADMOB_TEST_APP_ID = 'ca-app-pub-3940256099942544~1458002511'
 
@@ -23,24 +23,45 @@ const monetization = /MONETIZATION_ENABLED\s*=\s*true/.test(config)
 
 if (monetization) {
   requireCheck(
-    /^appl_(?!X{3})\S{8,}$/.test(revenueCatKey),
-    'RevenueCatの本番Public API keyを src/lib/config.ts に設定してください。',
+    /ADMOB_USE_TEST_ADS\s*=\s*false/.test(config),
+    'src/lib/config.ts の ADMOB_USE_TEST_ADS を false にしてください（true のままだとテスト広告のまま提出されます）。',
   )
   requireCheck(
     /^ca-app-pub-\d+\/\d+$/.test(admobBannerId) && admobBannerId !== ADMOB_TEST_BANNER_ID,
-    'AdMobの本番バナー広告ユニットIDを src/lib/config.ts に設定してください（Google公式テストIDは使用不可）。',
+    'AdMobの本番バナー広告ユニットID（ADMOB_BANNER_PRODUCTION）を src/lib/config.ts に設定してください（Google公式テストIDは使用不可）。',
   )
   requireCheck(
-    info.includes('GADApplicationIdentifier') && !info.includes(ADMOB_TEST_APP_ID),
-    'Info.plist の GADApplicationIdentifier を本番AdMobアプリIDへ設定してください（docs/MONETIZATION.md 参照）。',
+    /<key>GADApplicationIdentifier<\/key>\s*<string>ca-app-pub-\d+~\d+<\/string>/.test(info) && !info.includes(ADMOB_TEST_APP_ID),
+    'Info.plist の GADApplicationIdentifier を本番AdMobアプリIDへ設定してください。',
   )
+  requireCheck(info.includes('SKAdNetworkItems'), 'Info.plist に SKAdNetworkItems を追加してください。')
   requireCheck(
     info.includes('NSUserTrackingUsageDescription'),
     'Info.plist に NSUserTrackingUsageDescription を追加してください（docs/MONETIZATION.md 参照）。',
   )
   requireCheck(
-    !/includePlugins/.test(capacitorConfig) || /admob/.test(capacitorConfig),
-    'capacitor.config.ts の includePlugins に AdMob / RevenueCat を追加してください。',
+    /^com\.sunpotflower\.stamphabit\.removeads$/.test(productId),
+    'src/lib/config.ts の PRODUCT_REMOVE_ADS を App Store Connect の製品IDと一致させてください。',
+  )
+  requireCheck(
+    /StampPurchasesPlugin\.swift in Sources/.test(project) && /ViewController\.swift in Sources/.test(project),
+    'Xcodeプロジェクトに StampPurchasesPlugin.swift / ViewController.swift が含まれていません。',
+  )
+  requireCheck(
+    /customClass="ViewController"/.test(read('ios/App/App/Base.lproj/Main.storyboard')),
+    'Main.storyboard のルートを ViewController にしてください（StoreKitプラグインの登録に必要）。',
+  )
+  requireCheck(
+    /admob/.test(capacitorConfig.replace(/\/\/.*$/gm, '')) && /admob/i.test(read('ios/App/CapApp-SPM/Package.swift')),
+    'AdMobが capacitor.config.ts の includePlugins と CapApp-SPM/Package.swift にありません。npx cap sync ios を実行してください。',
+  )
+  requireCheck(
+    !/revenuecat/i.test(capacitorConfig + read('package.json') + read('ios/App/CapApp-SPM/Package.swift')),
+    'RevenueCatは使用しません。依存関係から外してください。',
+  )
+  requireCheck(
+    /AdMob/.test(privacyPolicy) && /AdMob|広告/.test(terms),
+    '広告を表示するため、規約・プライバシーポリシーに広告・課金の記述が必要です。',
   )
 } else {
   // 広告・課金なしの版：追跡や広告SDKの痕跡が残っていると審査でプライバシー申告と食い違う。

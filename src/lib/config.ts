@@ -1,29 +1,32 @@
 // ============================================================
 //  外部サービスの設定値
-//  ここの ID/キーは App Store 提出前に本番値へ置き換えてください。
+//  App Store 提出前に ADMOB_USE_TEST_ADS を false にしてください。
 //  （Web版・デモ動作には不要。ネイティブ(iOS)でのみ使用します）
 // ============================================================
 
 // ---- 広告・課金の有効化スイッチ ----
-// false の間は AdMob / RevenueCat を一切起動せず、広告・「広告を消す」の画面も出しません。
-// 有効化する手順は docs/MONETIZATION.md を参照してください（ネイティブ側の設定も必要です）。
-export const MONETIZATION_ENABLED = false
+// false にすると AdMob / StoreKit を一切起動せず、広告・「広告を消す」の画面も出しません。
+export const MONETIZATION_ENABLED = true
 
-// ---- RevenueCat（アプリ内課金） ----
-// RevenueCat ダッシュボード → API keys の「Public app-specific API key（Apple）」
-export const REVENUECAT_IOS_API_KEY = 'appl_XXXXXXXXXXXXXXXXXXXXXXXXXXXX' // TODO: 差し替え
+// ---- アプリ内課金（StoreKit 2・非消耗型） ----
+// App Store Connect で作成した「広告を消す」の製品ID（¥300）。
+// ネイティブ実装は ios/App/App/StampPurchasesPlugin.swift。
+export const PRODUCT_REMOVE_ADS = 'com.sunpotflower.stamphabit.removeads'
 
-// 「広告を消す」買い切りに紐づく Entitlement 識別子（RevenueCatで作成）
-export const ENTITLEMENT_PREMIUM = 'premium'
-
-// App Store Connect で作る非消費型プロダクトのID（¥300 / 広告除去）
-export const PRODUCT_REMOVE_ADS = 'remove_ads'
-
-// ---- Google AdMob（広告） ----
-// 本番の広告ユニットID（iOS）。未設定の間はテストIDを使います。
-export const ADMOB_BANNER_IOS = '' // TODO: 'ca-app-pub-XXXX/XXXX' を設定
-// AdMob 公式のテスト用バナーID（開発中はこれが表示されます）
+// ---- Google AdMob（バナー広告のみ） ----
+// 広告ユニットIDはここ1箇所で管理します。
+// AdMob アプリID（ca-app-pub-9319737313114058~5691564857）は ios/App/App/Info.plist の
+// GADApplicationIdentifier に設定してあります。
+export const ADMOB_BANNER_PRODUCTION = 'ca-app-pub-9319737313114058/5208222814'
+// Google 公式のテスト用バナー広告ユニットID（アダプティブバナー用）
 export const ADMOB_BANNER_TEST = 'ca-app-pub-3940256099942544/2934735716'
+
+// true の間は Google のテスト用広告ユニットを使い、AdMob にもテスト広告として扱わせます。
+// 開発・動作確認中は true。App Store へ提出するビルドの前に false へ切り替えてください
+// （true のままだと npm run validate:appstore が失敗します）。
+export const ADMOB_USE_TEST_ADS = true
+
+export const ADMOB_BANNER_UNIT_ID = ADMOB_USE_TEST_ADS ? ADMOB_BANNER_TEST : ADMOB_BANNER_PRODUCTION
 
 // ---- 法務・問い合わせ ----
 // Cloudflare で公開した静的ページのURL（末尾スラッシュ無し）に置き換え推奨

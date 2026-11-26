@@ -1,10 +1,26 @@
+import { registerPlugin, type PluginListenerHandle } from '@capacitor/core'
 import { isNative } from './platform'
-import {
-  REVENUECAT_IOS_API_KEY,
-  ENTITLEMENT_PREMIUM,
-  PRODUCT_REMOVE_ADS,
-  PREMIUM_PRICE_LABEL,
-} from './config'
+import { PRODUCT_REMOVE_ADS, PREMIUM_PRICE_LABEL } from './config'
+
+// ネイティブ実装: ios/App/App/StampPurchasesPlugin.swift（StoreKit 2）
+export type PurchaseOutcome = 'success' | 'cancelled' | 'pending' | 'error'
+
+interface StampPurchasesPlugin {
+  getProduct(options: { productId: string }): Promise<{
+    found: boolean
+    displayPrice?: string
+    displayName?: string
+  }>
+  isPurchased(options: { productId: string }): Promise<{ purchased: boolean }>
+  purchase(options: { productId: string }): Promise<{ status: PurchaseOutcome; message?: string }>
+  restore(options: { productId: string }): Promise<{ purchased: boolean }>
+  addListener(
+    eventName: 'premiumChanged',
+    listener: (event: { productId: string; purchased: boolean }) => void,
+  ): Promise<PluginListenerHandle>
+}
+
+const StampPurchases = registerPlugin<StampPurchasesPlugin>('StampPurchases')
 
 const DEMO_KEY = 'habit-stamp:premium-demo'
 
@@ -24,80 +40,31 @@ function setDemoPremium(v: boolean) {
   }
 }
 
-function hasRevenueCatConfiguration(): boolean {
-  return (
-    REVENUECAT_IOS_API_KEY.startsWith('appl_') &&
-    !REVENUECAT_IOS_API_KEY.includes('XXX') &&
-    REVENUECAT_IOS_API_KEY.length > 12
-  )
-}
+const options = { productId: PRODUCT_REMOVE_ADS }
 
-let configured = false
-let configuring: Promise<void> | null = null
-
-export async function initPurchases(): Promise<void> {
-  if (!isNative() || configured) return
-  if (!hasRevenueCatConfiguration()) {
-    console.warn('RevenueCat is not configured. Set REVENUECAT_IOS_API_KEY before release.')
-    return
-  }
-  if (!configuring) {
-    configuring = (async () => {
-      const { Purchases } = await import('@revenuecat/purchases-capacitor')
-      await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY })
-      configured = true
-    })().catch((error) => {
-      configuring = null
-      console.warn('RevenueCat init failed', error)
-    })
-  }
-  await configuring
-}
-
-async function getPremiumPackage() {
-  await initPurchases()
-  if (!configured) return null
-
-  const { Purchases } = await import('@revenuecat/purchases-capacitor')
-  const offerings = await Purchases.getOfferings()
-  const current = offerings.current
-  if (!current) return null
-
-  if (current.lifetime?.product.identifier === PRODUCT_REMOVE_ADS) {
-    return current.lifetime
-  }
-
-  return current.availablePackages.find(
-    (item) => item.product.identifier === PRODUCT_REMOVE_ADS,
-  ) ?? null
-}
-
+/** 起動時の購入状態確認。端末内の権利情報だけを見るので通信不要。失敗時は未購入扱い。 */
 export async function checkPremium(): Promise<boolean> {
   if (!isNative()) return demoPremium()
   try {
-    await initPurchases()
-    if (!configured) return false
-    const { Purchases } = await import('@revenuecat/purchases-capacitor')
-    const { customerInfo } = await Purchases.getCustomerInfo()
-    return customerInfo.entitlements.active[ENTITLEMENT_PREMIUM] !== undefined
+    const { purchased } = await StampPurchases.isPurchased(options)
+    return purchased
   } catch (error) {
     console.warn('checkPremium failed', error)
     return false
   }
 }
 
+/** App Store から取得したローカライズ済み価格。取得できない場合は既定の表記。 */
 export async function getPremiumPrice(): Promise<string> {
   if (!isNative()) return PREMIUM_PRICE_LABEL
   try {
-    const pkg = await getPremiumPackage()
-    return pkg?.product.priceString ?? PREMIUM_PRICE_LABEL
+    const product = await StampPurchases.getProduct(options)
+    return product.found && product.displayPrice ? product.displayPrice : PREMIUM_PRICE_LABEL
   } catch (error) {
     console.warn('getPremiumPrice failed', error)
     return PREMIUM_PRICE_LABEL
   }
 }
-
-export type PurchaseOutcome = 'success' | 'cancelled' | 'error'
 
 export async function buyPremium(): Promise<PurchaseOutcome> {
   if (!isNative()) {
@@ -105,14 +72,10 @@ export async function buyPremium(): Promise<PurchaseOutcome> {
     return 'success'
   }
   try {
-    const pkg = await getPremiumPackage()
-    if (!pkg) return 'error'
-    const { Purchases } = await import('@revenuecat/purchases-capacitor')
-    const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg })
-    return customerInfo.entitlements.active[ENTITLEMENT_PREMIUM] ? 'success' : 'error'
-  } catch (error: unknown) {
-    const err = error as { code?: string; userCancelled?: boolean }
-    if (err?.userCancelled || err?.code === 'PURCHASE_CANCELLED') return 'cancelled'
+    const { status, message } = await StampPurchases.purchase(options)
+    if (status === 'error') console.warn('buyPremium failed', message)
+    return status
+  } catch (error) {
     console.warn('buyPremium failed', error)
     return 'error'
   }
@@ -121,11 +84,8 @@ export async function buyPremium(): Promise<PurchaseOutcome> {
 export async function restorePremium(): Promise<boolean> {
   if (!isNative()) return demoPremium()
   try {
-    await initPurchases()
-    if (!configured) return false
-    const { Purchases } = await import('@revenuecat/purchases-capacitor')
-    const { customerInfo } = await Purchases.restorePurchases()
-    return customerInfo.entitlements.active[ENTITLEMENT_PREMIUM] !== undefined
+    const { purchased } = await StampPurchases.restore(options)
+    return purchased
   } catch (error) {
     console.warn('restorePremium failed', error)
     return false
@@ -133,20 +93,17 @@ export async function restorePremium(): Promise<boolean> {
 }
 
 /**
- * 購入状態の変化（別端末での購入・返金・オファーコード引き換え等）を購読する。
+ * 購入状態の変化（家族共有・返金・「承認と購入のリクエスト」の承認等）を購読する。
  * 戻り値で購読を解除できる。
  */
 export async function watchPremium(onChange: (premium: boolean) => void): Promise<() => void> {
   if (!isNative()) return () => undefined
   try {
-    await initPurchases()
-    if (!configured) return () => undefined
-    const { Purchases } = await import('@revenuecat/purchases-capacitor')
-    const listenerToRemove = await Purchases.addCustomerInfoUpdateListener((customerInfo) => {
-      onChange(customerInfo.entitlements.active[ENTITLEMENT_PREMIUM] !== undefined)
+    const handle = await StampPurchases.addListener('premiumChanged', (event) => {
+      if (event.productId === PRODUCT_REMOVE_ADS) onChange(event.purchased)
     })
     return () => {
-      void Purchases.removeCustomerInfoUpdateListener({ listenerToRemove }).catch(() => undefined)
+      void handle.remove().catch(() => undefined)
     }
   } catch (error) {
     console.warn('watchPremium failed', error)

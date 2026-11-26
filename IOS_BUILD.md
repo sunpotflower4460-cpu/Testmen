@@ -4,7 +4,7 @@
 初版は **iPhone専用** とし、iPad用スクリーンショット不足による提出ブロックを避けます。
 
 > はじめての方は、まず [docs/SUBMISSION_GUIDE.md](./docs/SUBMISSION_GUIDE.md) を上から進めてください。
-> 初版は広告・課金なしのため、下の「4. AdMob」「5. RevenueCat」は不要です。
+> 広告・課金（AdMob / StoreKit）の詳細と動作確認の手順は [docs/MONETIZATION.md](./docs/MONETIZATION.md) を参照してください。
 
 ## 0. 必要環境
 
@@ -12,7 +12,6 @@
 - Xcode 26以上
 - Apple Developer Program
 - AdMobアカウント
-- RevenueCatアカウント
 
 ## 1. コード品質確認
 
@@ -43,27 +42,25 @@ Xcodeの **Signing & Capabilities** で次を確認します。
 - Supported Destinations：iPhone
 - In-App Purchase capability：追加済みであることを確認
 
-## 4. AdMob・UMP同意
+## 4. AdMob・ATT・UMP同意
 
-1. AdMobでiOSアプリとバナー広告ユニットを作成
-2. `src/lib/config.ts` の `ADMOB_BANNER_IOS` を本番バナーIDへ変更
-3. `ios/App/App/Info.plist` の `GADApplicationIdentifier` を本番アプリIDへ変更
-4. AdMobの **Privacy & messaging** で、対象地域向けメッセージを公開
-5. 実機で次を確認
+1. `src/lib/config.ts`：開発中は `ADMOB_USE_TEST_ADS = true`（Googleのテスト広告）。提出ビルドでは `false`
+2. `ios/App/App/Info.plist`：`GADApplicationIdentifier`（設定済み）、`NSUserTrackingUsageDescription`、`SKAdNetworkItems`
+3. AdMobの **Privacy & messaging** で、対象地域向けメッセージを公開
+4. 実機で次を確認
    - 初回起動で必要地域のみ同意フォームが出る
    - 同意完了前に広告が読み込まれない
+   - ATTダイアログの後にバナーが出る
    - 設定画面に必要時のみ「広告のプライバシー設定」が出る
-   - プレミアム購入済みではAdMob/ATTが起動しない
+   - 購入済みではAdMob/ATTが起動しない
 
-## 5. RevenueCat・App内課金
+## 5. App内課金（StoreKit 2）
 
-1. App Store Connectで非消費型IAP `remove_ads` を作成
-2. RevenueCatでEntitlement `premium` を作成
-3. `remove_ads` をCurrent OfferingのLifetime packageへ登録
-4. `src/lib/config.ts` の `REVENUECAT_IOS_API_KEY` をApple用Public API keyへ変更
-5. Sandboxで購入・キャンセル・復元・再起動後の維持を確認
+1. App Store Connectで非消耗型IAP `com.sunpotflower.stamphabit.removeads` を作成（¥300）
+2. ローカル確認：Scheme の StoreKit Configuration に `ios/App/App/StampHabit.storekit` を指定
+3. Sandboxで購入・キャンセル・復元・再起動後の維持を確認
 
-コードはOfferingの先頭商品ではなく、Product ID `remove_ads` と一致する商品だけを購入します。
+購入処理は `ios/App/App/StampPurchasesPlugin.swift`、購入状態は端末内の `Transaction.currentEntitlements` で判定します。
 
 ## 6. 公開URLと審査情報
 
@@ -101,7 +98,7 @@ bundle exec fastlane release
 2. Validate App
 3. Distribute App → App Store Connect → Upload
 4. TestFlightで実機確認
-5. アプリ本体とIAP `remove_ads` を同時に審査提出
+5. アプリ本体とIAP `com.sunpotflower.stamphabit.removeads` を同時に審査提出
 
 ## 最終実機チェック
 

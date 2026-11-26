@@ -25,7 +25,7 @@ const MAX_IMPORT_BYTES = 5 * 1024 * 1024
 
 export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   const { settings } = api.data
-  const { premium, restore, isNative, loading, monetization } = usePremium()
+  const { premium, price, restore, isNative, loading, monetization } = usePremium()
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false)
@@ -206,7 +206,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
           <button className="premium-card" onClick={onUpgrade} disabled={busy !== null}>
             <span className="premium-card__badge" aria-hidden>✨</span>
             <div className="premium-card__text">
-              <strong>広告を消す（プレミアム）</strong>
+              <strong>広告を消す {price}</strong>
               <span>買い切りで、ずっと広告なしに</span>
             </div>
             <span className="premium-card__chev" aria-hidden>›</span>

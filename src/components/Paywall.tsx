@@ -20,6 +20,7 @@ export function Paywall({ onClose }: Props) {
     setBusy(null)
     if (r === 'success') setMsg('ありがとうございます！広告を非表示にしました🎉')
     else if (r === 'cancelled') setMsg('購入をキャンセルしました')
+    else if (r === 'pending') setMsg('購入は承認待ちです。承認されると広告が非表示になります。')
     else setMsg('購入を完了できませんでした。時間をおいて再度お試しください。')
   }
 

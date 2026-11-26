@@ -20,16 +20,31 @@
 
 ## 広告・App内課金
 
-初版（1.0.0）は **広告・App内課金なし** です（`MONETIZATION_ENABLED = false`）。
-有効化の手順は [docs/MONETIZATION.md](./docs/MONETIZATION.md) を参照してください。
+| 項目 | 値 |
+|---|---|
+| 広告 | Google AdMob のバナーのみ（画面下部）。インタースティシャル・動画なし |
+| AdMob アプリID | `ca-app-pub-9319737313114058~5691564857`（Info.plist の `GADApplicationIdentifier`） |
+| バナー広告ユニットID | `ca-app-pub-9319737313114058/5208222814`（`src/lib/config.ts`） |
+| IAPタイプ | 非消耗型（StoreKit 2） |
+| Product ID | `com.sunpotflower.stamphabit.removeads` |
+| 表示名 | 広告を消す（¥300） |
+| 説明 | すべての広告を非表示にします。買い切りで、追加課金はありません。 |
+
+提出するビルドでは `ADMOB_USE_TEST_ADS = false` にしてください（`npm run validate:appstore` が検出します）。
+手順は [docs/MONETIZATION.md](./docs/MONETIZATION.md) を参照してください。
 
 ## App Privacy
 
-「データを収集しない」と申告します。習慣記録は端末内だけに保存し、広告SDK・課金SDKはiOSアプリに組み込んでいません。
+習慣記録は端末内だけに保存します。広告（AdMob）は、実際に組み込んだSDKのPrivacy Reportと Google の最新の案内に合わせてApp Store Connectへ申告してください。
+
+- 広告識別子・使用状況データ・診断：AdMobによる広告配信（トラッキングに使用）
+- 購入情報：Appleが管理（開発者は取得しない）
+- 起動時に「広告を消す」購入済みなら、AdMob・ATTを一切起動しない
 
 ## 審査メモ
 
-`fastlane/metadata/review_information/notes.txt` を使います（サインイン不要・広告/課金/トラッキングなし）。
+`fastlane/metadata/review_information/notes.txt` を使います（サインイン不要・広告/ATT/IAPの説明入り）。
+IAP `com.sunpotflower.stamphabit.removeads` は、アプリ本体のバージョンと同時に審査へ提出してください。
 
 ## 提出前チェック
 
