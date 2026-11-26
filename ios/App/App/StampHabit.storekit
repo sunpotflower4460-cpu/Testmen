@@ -18,6 +18,41 @@
           "description" : "Remove all ads with a single purchase.",
           "displayName" : "Remove Ads",
           "locale" : "en_US"
+        },
+        {
+          "description" : "一次购买，移除所有广告。",
+          "displayName" : "移除广告",
+          "locale" : "zh_Hans"
+        },
+        {
+          "description" : "一次購買，移除所有廣告。",
+          "displayName" : "移除廣告",
+          "locale" : "zh_Hant"
+        },
+        {
+          "description" : "한 번 구입하면 모든 광고가 사라집니다.",
+          "displayName" : "광고 제거",
+          "locale" : "ko"
+        },
+        {
+          "description" : "Quita todos los anuncios con una sola compra.",
+          "displayName" : "Quitar anuncios",
+          "locale" : "es_ES"
+        },
+        {
+          "description" : "Supprimez toutes les publicités en un seul achat.",
+          "displayName" : "Supprimer les pubs",
+          "locale" : "fr_FR"
+        },
+        {
+          "description" : "Entfernt mit einem Kauf die gesamte Werbung.",
+          "displayName" : "Werbung entfernen",
+          "locale" : "de_DE"
+        },
+        {
+          "description" : "Remova todos os anúncios com uma única compra.",
+          "displayName" : "Remover anúncios",
+          "locale" : "pt_BR"
         }
       ],
       "productID" : "com.sunpotflower.stamphabit.removeads",

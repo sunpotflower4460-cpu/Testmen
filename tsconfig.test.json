@@ -10,6 +10,7 @@
     "rootDir": "."
   },
   "include": [
+    "src/lib/config.ts",
     "src/lib/date.ts",
     "src/lib/i18n/*.ts",
     "src/lib/palette.ts",

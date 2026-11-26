@@ -5,8 +5,10 @@ import { dateLocale } from './i18n/index.js'
 // 2023-01-01 は日曜日。曜日番号（0=日）から曜日名を作る基準日。
 const A_SUNDAY = { year: 2023, month0: 0, day: 1 }
 
+// 記録のキーとカレンダーのマス目は西暦なので、地域の暦の設定に関係なく西暦で書く。
 function format(date: Date, locale: string, options: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat(locale, options).format(date)
+  const gregorian = `${locale.split('-u-')[0]}-u-ca-gregory`
+  return new Intl.DateTimeFormat(gregorian, options).format(date)
 }
 
 export function toKey(d: Date): string {
@@ -41,10 +43,14 @@ export function weekdayLabel(dow: number, locale: string = dateLocale): string {
   return format(new Date(A_SUNDAY.year, A_SUNDAY.month0, A_SUNDAY.day + dow), locale, { weekday: 'short' })
 }
 
+// 日本語は long で「11月」になる。ほかの言語は短い月名にして幅を抑える。
+function monthStyle(locale: string): 'long' | 'short' {
+  return locale.startsWith('ja') ? 'long' : 'short'
+}
+
 /** ヘッダーの日付。例: 2026年11月26日(木) / Thu, Nov 26, 2026 */
 export function formatLong(d: Date, locale: string = dateLocale): string {
-  const month = locale.startsWith('ja') ? 'long' : 'short'
-  return format(d, locale, { year: 'numeric', month, day: 'numeric', weekday: 'short' })
+  return format(d, locale, { year: 'numeric', month: monthStyle(locale), day: 'numeric', weekday: 'short' })
 }
 
 /** カレンダーの見出し。例: 2026年11月 / November 2026 */
@@ -54,8 +60,7 @@ export function formatMonth(year: number, month0: number, locale: string = dateL
 
 /** 月と日。例: 11月5日 / Nov 5 */
 export function formatMonthDay(d: Date, locale: string = dateLocale): string {
-  const month = locale.startsWith('ja') ? 'long' : 'short'
-  return format(d, locale, { month, day: 'numeric' })
+  return format(d, locale, { month: monthStyle(locale), day: 'numeric' })
 }
 
 export function daysInMonth(year: number, month0: number): number {

@@ -1,0 +1,3 @@
+/* ホーム画面のアプリ名と、ATT（トラッキング許可）ダイアログの文言 */
+"CFBundleDisplayName" = "스탬프 습관";
+"NSUserTrackingUsageDescription" = "관심사에 맞는 광고를 보여 드리기 위해 추적 허용을 요청합니다.";
