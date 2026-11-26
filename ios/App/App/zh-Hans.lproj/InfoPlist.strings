@@ -1,0 +1,3 @@
+/* ホーム画面のアプリ名と、ATT（トラッキング許可）ダイアログの文言 */
+"CFBundleDisplayName" = "印章习惯";
+"NSUserTrackingUsageDescription" = "为了向你展示更符合兴趣的广告，我们希望获得跟踪许可。";

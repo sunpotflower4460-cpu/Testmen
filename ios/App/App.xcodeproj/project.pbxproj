@@ -38,6 +38,13 @@
 		AA11BB22CC33DD44EE550007 /* StampHabit.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = StampHabit.storekit; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE550012 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE550013 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE550014 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE550015 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE550016 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE550017 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE550018 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE550019 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE550020 /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,6 +143,13 @@
 				en,
 				Base,
 				ja,
+				"zh-Hans",
+				"zh-Hant",
+				ko,
+				es,
+				fr,
+				de,
+				"pt-BR",
 			);
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
@@ -203,6 +217,13 @@
 			children = (
 				AA11BB22CC33DD44EE550012 /* en */,
 				AA11BB22CC33DD44EE550013 /* ja */,
+				AA11BB22CC33DD44EE550014 /* zh-Hans */,
+				AA11BB22CC33DD44EE550015 /* zh-Hant */,
+				AA11BB22CC33DD44EE550016 /* ko */,
+				AA11BB22CC33DD44EE550017 /* es */,
+				AA11BB22CC33DD44EE550018 /* fr */,
+				AA11BB22CC33DD44EE550019 /* de */,
+				AA11BB22CC33DD44EE550020 /* pt-BR */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";

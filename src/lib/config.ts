@@ -4,6 +4,8 @@
 //  （Web版・デモ動作には不要。ネイティブ(iOS)でのみ使用します）
 // ============================================================
 
+import type { Lang } from './i18n/index.js'
+
 // ---- 広告・課金の有効化スイッチ ----
 // false にすると AdMob / StoreKit を一切起動せず、広告・「広告を消す」の画面も出しません。
 export const MONETIZATION_ENABLED = true
@@ -30,8 +32,23 @@ export const ADMOB_BANNER_UNIT_ID = ADMOB_USE_TEST_ADS ? ADMOB_BANNER_TEST : ADM
 
 // ---- 法務・問い合わせ ----
 // 表示言語ごとのページ。Cloudflare で公開した静的ページのURL（末尾スラッシュ無し）に置き換え推奨
-export const URL_PRIVACY = { ja: './privacy.html', en: './privacy.en.html' } as const
-export const URL_TERMS = { ja: './terms.html', en: './terms.en.html' } as const
+// 規約類の本文は日本語版と英語版だけを用意し、ほかの言語では英語版を表示する。
+function legalPages(name: 'privacy' | 'terms'): Record<Lang, string> {
+  const english = `./${name}.en.html`
+  return {
+    ja: `./${name}.html`,
+    en: english,
+    'zh-Hans': english,
+    'zh-Hant': english,
+    ko: english,
+    es: english,
+    fr: english,
+    de: english,
+    'pt-BR': english,
+  }
+}
+export const URL_PRIVACY = legalPages('privacy')
+export const URL_TERMS = legalPages('terms')
 export const CONTACT_EMAIL = 'sunpotflower4460@gmail.com'
 // App Store の数値ID（申請後に採番）。設定するとレビュー導線が有効化。
 export const APP_STORE_ID = ''

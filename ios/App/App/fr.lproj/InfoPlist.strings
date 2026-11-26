@@ -1,0 +1,3 @@
+/* ホーム画面のアプリ名と、ATT（トラッキング許可）ダイアログの文言 */
+"CFBundleDisplayName" = "Stamp Habit";
+"NSUserTrackingUsageDescription" = "Nous vous demandons l’autorisation de suivi afin de vous proposer des publicités plus pertinentes.";
