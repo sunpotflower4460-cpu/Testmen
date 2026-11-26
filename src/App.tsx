@@ -52,7 +52,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="app-header__brand">
-          <span className="app-header__logo" aria-hidden>㊡</span>
+          <span className="app-header__logo" aria-hidden>㊞</span>
           <div>
             <h1 className="app-header__title">{t.appName}</h1>
             <p className="app-header__date">{today}</p>
