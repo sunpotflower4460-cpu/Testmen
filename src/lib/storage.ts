@@ -1,5 +1,6 @@
 import type { AppData, Habit, Records, Settings } from './types.js'
 import { DEFAULT_COLOR_ID, getColor } from './palette.js'
+import { t } from './i18n/index.js'
 
 export const STORAGE_KEY = 'habit-stamp:v1'
 // 読めなかった保存データを上書きで失わないよう退避しておくキー。
@@ -85,7 +86,7 @@ function sanitizeHabits(input: unknown): Habit[] {
 
     out.push({
       id: o.id,
-      title: (rawTitle || '無題').slice(0, MAX_TITLE_LENGTH),
+      title: (rawTitle || t.untitled).slice(0, MAX_TITLE_LENGTH),
       emoji: (rawEmoji || '✓').slice(0, MAX_EMOJI_LENGTH),
       colorId: getColor(rawColor).id,
       createdAt: Number.isFinite(createdAtValue)
@@ -148,18 +149,18 @@ export function parseImport(text: string): AppData {
   try {
     parsed = JSON.parse(text.replace(/^\uFEFF/, ''))
   } catch {
-    throw new Error('JSONファイルとして読み込めませんでした')
+    throw new Error(t.importErrors.invalidJson)
   }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new Error('不正な形式です')
+    throw new Error(t.importErrors.invalidFormat)
   }
 
   const o = parsed as Record<string, unknown>
   if (!Array.isArray(o.habits) || !o.records || typeof o.records !== 'object' || Array.isArray(o.records)) {
-    throw new Error('このアプリのデータではありません')
+    throw new Error(t.importErrors.notThisApp)
   }
   if (typeof o.version === 'number' && o.version > SCHEMA_VERSION) {
-    throw new Error('このバージョンでは読み込めない新しい形式です')
+    throw new Error(t.importErrors.newerVersion)
   }
 
   return normalize(parsed as Partial<AppData>)

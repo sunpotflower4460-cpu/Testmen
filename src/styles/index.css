@@ -748,6 +748,8 @@ html.has-ad .sheet {
   bottom: calc(var(--ad-h) + env(safe-area-inset-bottom));
 }
 html.has-ad .sheet__panel {
+  /* シートを持ち上げた分だけ高さも縮める。縮めないと上端がステータスバーに重なり、閉じるボタンが押せない。 */
+  max-height: calc(90dvh - var(--ad-h) - env(safe-area-inset-bottom));
   padding-bottom: 24px;
 }
 

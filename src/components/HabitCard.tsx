@@ -4,6 +4,7 @@ import type { AppApi } from '../lib/useAppData'
 import { getColor } from '../lib/palette'
 import { StampButton } from './StampButton'
 import { currentStreak, todayKey } from '../lib/date'
+import { t } from '../lib/i18n'
 
 interface Props {
   habit: Habit
@@ -28,18 +29,18 @@ export function HabitCard({ habit, api, onEdit }: Props) {
           <h2 className="card__title">{habit.title}</h2>
           <div className="card__stats">
             {streak > 0 ? (
-              <span className="chip chip--streak">🔥 {streak}日連続</span>
+              <span className="chip chip--streak">{t.card.streak(streak)}</span>
             ) : (
-              <span className="chip chip--muted">今日から始めよう</span>
+              <span className="chip chip--muted">{t.card.startToday}</span>
             )}
-            <span className="chip chip--muted">計{total}回</span>
+            <span className="chip chip--muted">{t.card.total(total)}</span>
           </div>
         </div>
         <button
           className="icon-btn icon-btn--ghost"
           onClick={() => onEdit(habit)}
-          aria-label={`${habit.title}を編集`}
-          title="編集"
+          aria-label={t.card.editNamed(habit.title)}
+          title={t.card.edit}
         >
           ⋯
         </button>
@@ -52,10 +53,10 @@ export function HabitCard({ habit, api, onEdit }: Props) {
           emoji={habit.emoji}
           soundOn={api.data.settings.sound}
           onToggle={() => api.toggleRecord(habit.id, todayKey())}
-          ariaLabel={done ? `${habit.title}の今日の記録を取り消す` : `${habit.title}を今日できた`}
+          ariaLabel={done ? t.card.undoToday(habit.title) : t.card.markToday(habit.title)}
         />
         <p className={'card__status' + (done ? ' card__status--done' : '')}>
-          {done ? 'できた！おつかれさま' : 'タップしてハンコを押す'}
+          {done ? t.card.done : t.card.tapToStamp}
         </p>
       </div>
     </article>

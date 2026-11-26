@@ -1,5 +1,5 @@
 import { isNative } from './platform'
-import { ADMOB_BANNER_IOS, ADMOB_BANNER_TEST } from './config'
+import { ADMOB_BANNER_UNIT_ID, ADMOB_USE_TEST_ADS } from './config'
 
 export interface AdPrivacyState {
   canRequestAds: boolean
@@ -123,13 +123,12 @@ export async function showBanner(): Promise<boolean> {
     await ensureSizeListener()
     const { AdMob, BannerAdPosition, BannerAdSize } = await import('@capacitor-community/admob')
     if (!bannerWanted) return false
-    const useTest = !ADMOB_BANNER_IOS
     await AdMob.showBanner({
-      adId: ADMOB_BANNER_IOS || ADMOB_BANNER_TEST,
+      adId: ADMOB_BANNER_UNIT_ID,
       adSize: BannerAdSize.ADAPTIVE_BANNER,
       position: BannerAdPosition.BOTTOM_CENTER,
       margin: 0,
-      isTesting: useTest,
+      isTesting: ADMOB_USE_TEST_ADS,
     })
     return true
   } catch (error) {
@@ -142,6 +141,8 @@ export async function hideBanner(): Promise<void> {
   if (!isNative()) return
   bannerWanted = false
   applyAdInset(0)
+  // 広告を一度も準備していない（購入済みで起動した等）場合は、AdMobに一切触れない。
+  if (!preparation) return
   try {
     const { AdMob } = await import('@capacitor-community/admob')
     await AdMob.removeBanner()

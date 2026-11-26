@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { usePremium } from '../lib/usePremium'
 import { showBanner, hideBanner } from '../lib/ads'
+import { t } from '../lib/i18n'
 
 interface Props {
   onUpgrade: () => void
@@ -27,11 +28,11 @@ export function AdBanner({ onUpgrade }: Props) {
   if (isNative) return null
 
   return (
-    <div className="adbanner" role="complementary" aria-label="広告">
-      <span className="adbanner__tag">広告</span>
-      <span className="adbanner__text">ここにバナー広告が表示されます（Webはプレビュー）</span>
+    <div className="adbanner" role="complementary" aria-label={t.ads.label}>
+      <span className="adbanner__tag">{t.ads.label}</span>
+      <span className="adbanner__text">{t.ads.webPlaceholder}</span>
       <button className="adbanner__remove" onClick={onUpgrade}>
-        広告を消す
+        {t.purchase.removeAds}
       </button>
     </div>
   )

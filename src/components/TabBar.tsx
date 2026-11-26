@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n'
+
 export type Tab = 'today' | 'calendar'
 
 interface Props {
@@ -8,17 +10,17 @@ interface Props {
 
 export function TabBar({ tab, onChange, onAdd }: Props) {
   return (
-    <nav className="tabbar" aria-label="メインナビゲーション">
+    <nav className="tabbar" aria-label={t.tabs.navigation}>
       <button
         className={'tabbar__item' + (tab === 'today' ? ' is-active' : '')}
         onClick={() => onChange('today')}
         aria-current={tab === 'today' ? 'page' : undefined}
       >
         <span className="tabbar__icon" aria-hidden>㊡</span>
-        <span className="tabbar__label">今日</span>
+        <span className="tabbar__label">{t.tabs.today}</span>
       </button>
 
-      <button className="tabbar__fab" onClick={onAdd} aria-label="タイトルを追加">
+      <button className="tabbar__fab" onClick={onAdd} aria-label={t.tabs.add}>
         ＋
       </button>
 
@@ -28,7 +30,7 @@ export function TabBar({ tab, onChange, onAdd }: Props) {
         aria-current={tab === 'calendar' ? 'page' : undefined}
       >
         <span className="tabbar__icon" aria-hidden>📅</span>
-        <span className="tabbar__label">カレンダー</span>
+        <span className="tabbar__label">{t.tabs.calendar}</span>
       </button>
     </nav>
   )

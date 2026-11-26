@@ -3,6 +3,7 @@ import type { AppData, Habit, Settings } from './types'
 import { loadData, saveData, uid } from './storage'
 import { DEFAULT_COLOR_ID } from './palette'
 import { toggleRecordDate } from './records'
+import { t } from './i18n'
 
 export interface HabitInput {
   title: string
@@ -49,7 +50,7 @@ export function useAppData(): AppApi {
         : 0
       const habit: Habit = {
         id: uid(),
-        title: input.title.trim() || '無題',
+        title: input.title.trim() || t.untitled,
         emoji: input.emoji || '✓',
         colorId: input.colorId || DEFAULT_COLOR_ID,
         createdAt: new Date().toISOString(),

@@ -1,9 +1,19 @@
 // ---- ドメインモデル -------------------------------------------------------
 
+export type ColorId =
+  | 'vermilion'
+  | 'indigo'
+  | 'matcha'
+  | 'sumi'
+  | 'yamabuki'
+  | 'murasaki'
+  | 'peacock'
+  | 'momo'
+
 /** インク色のプリセット。ハンコの朱色を筆頭に、和の色味で揃える。 */
 export interface InkColor {
-  id: string
-  name: string
+  /** 表示名は文言ファイル（i18n の colors）にこのidで持つ */
+  id: ColorId
   /** メインのインク色 */
   ink: string
   /** カード等で使う淡い背景色 */

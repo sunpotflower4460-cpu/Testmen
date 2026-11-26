@@ -3,7 +3,8 @@ import type { Habit } from '../lib/types'
 import type { AppApi } from '../lib/useAppData'
 import { getColor } from '../lib/palette'
 import {
-  formatMonthJa,
+  formatMonth,
+  formatMonthDay,
   isFuture,
   isToday,
   monthDayKeys,
@@ -12,6 +13,7 @@ import {
   fromKey,
 } from '../lib/date'
 import { playStamp, playUnstamp } from '../lib/sound'
+import { t } from '../lib/i18n'
 
 interface Props {
   habits: Habit[]
@@ -74,9 +76,9 @@ export function CalendarView({ habits, api, onAdd }: Props) {
     return (
       <div className="empty">
         <div className="empty__stamp" aria-hidden>📅</div>
-        <h2 className="empty__title">記録するタイトルがありません</h2>
-        <p className="empty__text">まずは継続したいことを登録しましょう。</p>
-        <button className="btn btn--primary btn--lg" onClick={onAdd}>＋ タイトルを作る</button>
+        <h2 className="empty__title">{t.calendar.emptyTitle}</h2>
+        <p className="empty__text">{t.calendar.emptyText}</p>
+        <button className="btn btn--primary btn--lg" onClick={onAdd}>{t.calendar.create}</button>
       </div>
     )
   }
@@ -84,21 +86,21 @@ export function CalendarView({ habits, api, onAdd }: Props) {
   return (
     <div className="cal">
       <div className="cal__nav">
-        <button className="icon-btn" onClick={() => shiftMonth(-1)} aria-label="前の月">‹</button>
-        <h2 className="cal__month">{formatMonthJa(year, month0)}</h2>
-        <button className="icon-btn" onClick={() => shiftMonth(1)} aria-label="次の月">›</button>
+        <button className="icon-btn" onClick={() => shiftMonth(-1)} aria-label={t.calendar.previousMonth}>‹</button>
+        <h2 className="cal__month">{formatMonth(year, month0)}</h2>
+        <button className="icon-btn" onClick={() => shiftMonth(1)} aria-label={t.calendar.nextMonth}>›</button>
         {!isCurrentMonth && (
-          <button className="btn btn--soft btn--sm cal__today" onClick={goToday}>今日へ</button>
+          <button className="btn btn--soft btn--sm cal__today" onClick={goToday}>{t.calendar.goToday}</button>
         )}
       </div>
 
-      <p className="cal__hint">セルをタップで過去の記録も付けられます（縦：日付／横：タイトル）</p>
+      <p className="cal__hint">{t.calendar.hint}</p>
 
       <div className="cal__scroll">
         <table className="grid" style={{ '--cols': habits.length } as React.CSSProperties}>
           <thead>
             <tr>
-              <th className="grid__corner">日付</th>
+              <th className="grid__corner">{t.calendar.date}</th>
               {habits.map((habit) => {
                 const color = getColor(habit.colorId)
                 return (
@@ -133,7 +135,7 @@ export function CalendarView({ habits, api, onAdd }: Props) {
                           style={{ '--ink': color.ink, '--tint': color.tint } as React.CSSProperties}
                           onClick={() => onCellClick(habit, key)}
                           disabled={future}
-                          aria-label={`${habit.title} ${month0 + 1}月${day}日 ${done ? '達成済み' : '未達成'}`}
+                          aria-label={t.calendar.cell(habit.title, formatMonthDay(fromKey(key)), done)}
                           aria-pressed={done}
                         >
                           {done && <span className="cell__mark">{habit.emoji}</span>}
@@ -147,9 +149,9 @@ export function CalendarView({ habits, api, onAdd }: Props) {
           </tbody>
           <tfoot>
             <tr>
-              <th className="grid__corner grid__corner--foot">計</th>
+              <th className="grid__corner grid__corner--foot">{t.calendar.total}</th>
               {habits.map((habit) => (
-                <td key={habit.id} className="grid__total">{monthCounts[habit.id]}<small>日</small></td>
+                <td key={habit.id} className="grid__total">{monthCounts[habit.id]}<small>{t.calendar.dayUnit}</small></td>
               ))}
             </tr>
           </tfoot>

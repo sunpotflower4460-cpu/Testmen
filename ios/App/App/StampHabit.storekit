@@ -1,0 +1,38 @@
+{
+  "identifier" : "A1B2C3D4",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "300",
+      "familyShareable" : false,
+      "internalID" : "6A1B2C3D4E",
+      "localizations" : [
+        {
+          "description" : "一度の購入で、すべての広告を非表示にします。",
+          "displayName" : "広告を消す",
+          "locale" : "ja"
+        },
+        {
+          "description" : "Remove all ads with a single purchase.",
+          "displayName" : "Remove Ads",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.sunpotflower.stamphabit.removeads",
+      "referenceName" : "広告を消す",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

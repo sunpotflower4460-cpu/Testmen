@@ -4,6 +4,7 @@ import { Sheet } from './Sheet'
 import { LegalLink } from './LegalLink'
 import { exportData, parseImport } from '../lib/storage'
 import { toKey } from '../lib/date'
+import { lang, t } from '../lib/i18n'
 import { usePremium } from '../lib/usePremium'
 import { getAdPrivacyState, hideBanner, showAdPrivacyOptions, showBanner } from '../lib/ads'
 import {
@@ -25,7 +26,7 @@ const MAX_IMPORT_BYTES = 5 * 1024 * 1024
 
 export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   const { settings } = api.data
-  const { premium, restore, isNative, loading, monetization } = usePremium()
+  const { premium, price, restore, isNative, loading, monetization } = usePremium()
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false)
@@ -53,7 +54,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
     setMsg(null)
     try {
       const ok = await restore()
-      setMsg(ok ? '購入を復元しました' : '復元できる購入が見つかりませんでした')
+      setMsg(ok ? t.purchase.restored : t.purchase.nothingToRestore)
     } finally {
       setBusy(null)
     }
@@ -70,15 +71,15 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
       if (state.canRequestAds) await showBanner()
       else await hideBanner()
 
-      setMsg('広告のプライバシー設定を更新しました')
+      setMsg(t.settings.adPrivacyUpdated)
     } finally {
       setBusy(null)
     }
   }
 
   function contact() {
-    const subject = encodeURIComponent('スタンプ習慣 お問い合わせ')
-    const body = encodeURIComponent(`\n\n---\nバージョン: ${APP_VERSION}`)
+    const subject = encodeURIComponent(t.settings.mailSubject)
+    const body = encodeURIComponent(`\n\n---\n${t.settings.mailVersion(APP_VERSION)}`)
     location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`
   }
 
@@ -110,14 +111,14 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
         if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
           try {
             await navigator.share({
-              title: 'スタンプ習慣 バックアップ',
+              title: t.settings.backupShareTitle,
               files: [file],
             })
-            setMsg('データを書き出しました')
+            setMsg(t.settings.exported)
             return
           } catch (error) {
             if (error instanceof DOMException && error.name === 'AbortError') {
-              setMsg('書き出しをキャンセルしました')
+              setMsg(t.settings.exportCancelled)
               return
             }
           }
@@ -131,9 +132,9 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
         const url = URL.createObjectURL(blob)
         clickDownload(url, filename, url)
       }
-      setMsg('データを書き出しました')
+      setMsg(t.settings.exported)
     } catch {
-      setMsg('データの書き出しに失敗しました')
+      setMsg(t.settings.exportFailed)
     } finally {
       setBusy(null)
     }
@@ -144,7 +145,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
     event.target.value = ''
     if (!file || busy) return
     if (file.size > MAX_IMPORT_BYTES) {
-      setMsg('ファイルが大きすぎます（5MB以下のJSONをご利用ください）')
+      setMsg(t.settings.fileTooLarge)
       return
     }
 
@@ -154,25 +155,25 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
     reader.onload = () => {
       try {
         const data = parseImport(String(reader.result))
-        if (!confirm('現在のデータを上書きします。よろしいですか？')) {
-          setMsg('読み込みをキャンセルしました')
+        if (!confirm(t.settings.overwriteConfirm)) {
+          setMsg(t.settings.importCancelled)
           return
         }
         api.replaceAll(data)
-        setMsg('データを読み込みました')
+        setMsg(t.settings.imported)
       } catch (error) {
-        setMsg(error instanceof Error ? error.message : '読み込みに失敗しました')
+        setMsg(error instanceof Error ? error.message : t.settings.importFailed)
       } finally {
         setBusy(null)
       }
     }
     reader.onerror = () => {
       setBusy(null)
-      setMsg('ファイルを読み取れませんでした')
+      setMsg(t.settings.fileUnreadable)
     }
     reader.onabort = () => {
       setBusy(null)
-      setMsg('読み込みをキャンセルしました')
+      setMsg(t.settings.importCancelled)
     }
     reader.readAsText(file)
   }
@@ -181,16 +182,16 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   const recordCount = Object.values(api.data.records).reduce((count, dates) => count + dates.length, 0)
 
   return (
-    <Sheet title="設定" onClose={onClose}>
+    <Sheet title={t.settings.title} onClose={onClose}>
       <div className="settings">
         <div className="settings__stats">
           <div className="settings__stat">
             <strong>{habitCount}</strong>
-            <span>タイトル</span>
+            <span>{t.settings.habits}</span>
           </div>
           <div className="settings__stat">
             <strong>{recordCount}</strong>
-            <span>スタンプ</span>
+            <span>{t.settings.stamps}</span>
           </div>
         </div>
 
@@ -198,16 +199,16 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
           <div className="premium-card premium-card--owned">
             <span className="premium-card__badge" aria-hidden>✨</span>
             <div className="premium-card__text">
-              <strong>プレミアム有効</strong>
-              <span>広告は非表示です。応援ありがとうございます！</span>
+              <strong>{t.settings.premiumActive}</strong>
+              <span>{t.settings.premiumThanks}</span>
             </div>
           </div>
         ) : (
           <button className="premium-card" onClick={onUpgrade} disabled={busy !== null}>
             <span className="premium-card__badge" aria-hidden>✨</span>
             <div className="premium-card__text">
-              <strong>広告を消す（プレミアム）</strong>
-              <span>買い切りで、ずっと広告なしに</span>
+              <strong>{price ? t.purchase.removeAdsWithPrice(price) : t.purchase.removeAds}</strong>
+              <span>{t.settings.removeAdsHint}</span>
             </div>
             <span className="premium-card__chev" aria-hidden>›</span>
           </button>
@@ -215,8 +216,8 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
 
         <label className="toggle">
           <div className="toggle__text">
-            <span className="toggle__label">効果音</span>
-            <span className="toggle__desc">ハンコを押した時に音を鳴らす</span>
+            <span className="toggle__label">{t.settings.sound}</span>
+            <span className="toggle__desc">{t.settings.soundHint}</span>
           </div>
           <input
             type="checkbox"
@@ -228,54 +229,54 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
         </label>
 
         <div className="settings__group">
-          <span className="settings__group-title">データ</span>
+          <span className="settings__group-title">{t.settings.data}</span>
           <p className="settings__note">
-            記録は{isNative ? 'この端末内' : 'このブラウザ内'}に保存されます。機種変更やバックアップにはエクスポートをご利用ください。
+            {isNative ? t.settings.dataNoteDevice : t.settings.dataNoteBrowser}
           </p>
           <div className="settings__buttons">
             <button className="btn btn--soft btn--block" onClick={doExport} disabled={busy !== null}>
-              {busy === 'export' ? '書き出し中…' : '⬇ エクスポート'}
+              {busy === 'export' ? t.settings.exporting : t.settings.export}
             </button>
             <button className="btn btn--soft btn--block" onClick={() => fileRef.current?.click()} disabled={busy !== null}>
-              {busy === 'import' ? '読み込み中…' : '⬆ インポート'}
+              {busy === 'import' ? t.settings.importing : t.settings.import}
             </button>
             <input ref={fileRef} type="file" accept="application/json,.json" onChange={onFile} hidden />
           </div>
         </div>
 
         <div className="settings__group">
-          <span className="settings__group-title">情報・サポート</span>
+          <span className="settings__group-title">{t.settings.support}</span>
           <div className="settings__links">
             {monetization && !premium && (
               <button className="linkrow" onClick={doRestore} disabled={busy !== null}>
-                <span>{busy === 'restore' ? '購入を確認中…' : '購入を復元'}</span><span className="linkrow__chev" aria-hidden>›</span>
+                <span>{busy === 'restore' ? t.settings.restoring : t.purchase.restore}</span><span className="linkrow__chev" aria-hidden>›</span>
               </button>
             )}
             {privacyOptionsRequired && !premium && (
               <button className="linkrow" onClick={manageAdPrivacy} disabled={busy !== null}>
-                <span>{busy === 'privacy' ? '設定を確認中…' : '広告のプライバシー設定'}</span><span className="linkrow__chev" aria-hidden>›</span>
+                <span>{busy === 'privacy' ? t.settings.adPrivacyChecking : t.settings.adPrivacy}</span><span className="linkrow__chev" aria-hidden>›</span>
               </button>
             )}
             {/* 公開前は評価ページが存在しないため出さない（審査で「未完成の機能」と見なされるのを避ける） */}
             {APP_STORE_ID && (
               <button className="linkrow" onClick={rate} disabled={busy !== null}>
-                <span>アプリを評価する</span><span className="linkrow__chev" aria-hidden>›</span>
+                <span>{t.settings.rate}</span><span className="linkrow__chev" aria-hidden>›</span>
               </button>
             )}
             <button className="linkrow" onClick={contact} disabled={busy !== null}>
-              <span>お問い合わせ</span><span className="linkrow__chev" aria-hidden>›</span>
+              <span>{t.settings.contact}</span><span className="linkrow__chev" aria-hidden>›</span>
             </button>
-            <LegalLink className="linkrow" href={URL_TERMS} title="利用規約">
-              <span>利用規約</span><span className="linkrow__chev" aria-hidden>›</span>
+            <LegalLink className="linkrow" href={URL_TERMS[lang]} title={t.settings.terms}>
+              <span>{t.settings.terms}</span><span className="linkrow__chev" aria-hidden>›</span>
             </LegalLink>
-            <LegalLink className="linkrow" href={URL_PRIVACY} title="プライバシーポリシー">
-              <span>プライバシーポリシー</span><span className="linkrow__chev" aria-hidden>›</span>
+            <LegalLink className="linkrow" href={URL_PRIVACY[lang]} title={t.settings.privacy}>
+              <span>{t.settings.privacy}</span><span className="linkrow__chev" aria-hidden>›</span>
             </LegalLink>
           </div>
         </div>
 
         {msg && <p className="settings__msg" role="status">{msg}</p>}
-        <p className="settings__version">スタンプ習慣 v{APP_VERSION}</p>
+        <p className="settings__version">{t.appName} v{APP_VERSION}</p>
       </div>
     </Sheet>
   )
