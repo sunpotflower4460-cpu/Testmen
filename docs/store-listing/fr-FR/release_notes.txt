@@ -1,0 +1,2 @@
+Ajout d’une bannière publicitaire en bas de l’écran. L’achat unique « Supprimer les pubs », dans les réglages, permet de la masquer.
+L’app est désormais disponible en 9 langues, au choix dans les réglages.

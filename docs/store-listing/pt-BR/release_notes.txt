@@ -1,0 +1,2 @@
+Adicionamos um banner de anúncio na parte inferior da tela. A compra única “Remover anúncios”, nos Ajustes, oculta o banner.
+Agora disponível em 9 idiomas, com escolha do idioma nos Ajustes.

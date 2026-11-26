@@ -1,0 +1,2 @@
+Added a banner ad at the bottom of the screen. The one-time “Remove ads” purchase in Settings hides it.
+Now available in 9 languages, and you can choose the display language in Settings.

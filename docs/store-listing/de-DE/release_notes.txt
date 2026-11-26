@@ -1,0 +1,2 @@
+Am unteren Bildschirmrand wird jetzt ein Werbebanner angezeigt. Mit dem Einmalkauf „Werbung entfernen“ in den Einstellungen blendest du es aus.
+Die App gibt es jetzt in 9 Sprachen, wählbar in den Einstellungen.
