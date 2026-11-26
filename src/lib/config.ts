@@ -26,7 +26,7 @@ export const ADMOB_BANNER_TEST = 'ca-app-pub-3940256099942544/2934735716'
 // true の間は Google のテスト用広告ユニットを使い、AdMob にもテスト広告として扱わせます。
 // 開発・動作確認中は true。App Store へ提出するビルドの前に false へ切り替えてください
 // （true のままだと npm run validate:appstore が失敗します）。
-export const ADMOB_USE_TEST_ADS = true
+export const ADMOB_USE_TEST_ADS = false
 
 export const ADMOB_BANNER_UNIT_ID = ADMOB_USE_TEST_ADS ? ADMOB_BANNER_TEST : ADMOB_BANNER_PRODUCTION
 
