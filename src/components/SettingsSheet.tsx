@@ -4,7 +4,8 @@ import { Sheet } from './Sheet'
 import { LegalLink } from './LegalLink'
 import { exportData, parseImport } from '../lib/storage'
 import { toKey } from '../lib/date'
-import { lang, t } from '../lib/i18n'
+import { DICTIONARIES, LANGUAGE_NAMES, lang, setLanguageSetting, t, type Lang, type LangSetting } from '../lib/i18n'
+import { useLanguage } from '../lib/useLanguage'
 import { usePremium } from '../lib/usePremium'
 import { getAdPrivacyState, hideBanner, showAdPrivacyOptions, showBanner } from '../lib/ads'
 import {
@@ -31,6 +32,7 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
   const [msg, setMsg] = useState<string | null>(null)
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false)
   const [busy, setBusy] = useState<BusyAction>(null)
+  const { setting: languageSetting } = useLanguage()
 
   useEffect(() => {
     let active = true
@@ -75,6 +77,12 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
     } finally {
       setBusy(null)
     }
+  }
+
+  function changeLanguage(next: LangSetting) {
+    // 直前の操作結果は前の言語のままになるので消す。
+    setMsg(null)
+    setLanguageSetting(next)
   }
 
   function contact() {
@@ -226,6 +234,28 @@ export function SettingsSheet({ api, onClose, onUpgrade }: Props) {
             onChange={(event) => api.setSettings({ sound: event.target.checked })}
           />
           <span className="toggle__track" aria-hidden />
+        </label>
+
+        <label className="settings__group">
+          {/* 読めない言語になっていても探せるように、地球の記号と英語名を添える */}
+          <span className="settings__group-title">
+            <span aria-hidden>🌐 </span>
+            {t.settings.language}
+            {t.settings.language !== DICTIONARIES.en.settings.language && ` / ${DICTIONARIES.en.settings.language}`}
+          </span>
+          <select
+            className="field__input settings__select"
+            value={languageSetting}
+            onChange={(event) => changeLanguage(event.target.value as LangSetting)}
+            disabled={busy !== null}
+          >
+            <option value="auto">{t.settings.languageAuto}</option>
+            {(Object.keys(LANGUAGE_NAMES) as Lang[]).map((code) => (
+              <option key={code} value={code} lang={code}>
+                {LANGUAGE_NAMES[code]}
+              </option>
+            ))}
+          </select>
         </label>
 
         <div className="settings__group">

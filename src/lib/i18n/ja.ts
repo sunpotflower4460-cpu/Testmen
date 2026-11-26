@@ -128,6 +128,8 @@ export const ja = {
     removeAdsHint: '買い切りで、ずっと広告なしに',
     sound: '効果音',
     soundHint: 'ハンコを押した時に音を鳴らす',
+    language: '言語',
+    languageAuto: '自動（端末の設定）',
     data: 'データ',
     dataNoteDevice: '記録はこの端末内に保存されます。機種変更やバックアップにはエクスポートをご利用ください。',
     dataNoteBrowser: '記録はこのブラウザ内に保存されます。機種変更やバックアップにはエクスポートをご利用ください。',

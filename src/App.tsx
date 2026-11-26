@@ -10,6 +10,7 @@ import { AdBanner } from './components/AdBanner'
 import { Paywall } from './components/Paywall'
 import { formatLong } from './lib/date'
 import { t } from './lib/i18n'
+import { useLanguage } from './lib/useLanguage'
 import { useDayKey } from './lib/useDayKey'
 import { nativeBootstrap } from './lib/nativeBootstrap'
 
@@ -22,6 +23,7 @@ export default function App() {
   const [showPaywall, setShowPaywall] = useState(false)
 
   const dayKey = useDayKey()
+  const { lang } = useLanguage()
 
   // 広告は PremiumProvider の判定完了後に AdBanner 側で初期化する。
   // 購入済みユーザーに AdMob / ATT を起動しないため、ここでは見た目調整だけ行う。
@@ -34,7 +36,7 @@ export default function App() {
     [api.data.habits],
   )
 
-  const today = useMemo(() => formatLong(new Date()), [dayKey])
+  const today = useMemo(() => formatLong(new Date()), [dayKey, lang])
 
   function openNew() {
     setEditing(null)

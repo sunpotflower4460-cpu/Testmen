@@ -1,10 +1,12 @@
 // 表示言語の判定と文言の取り出し。
 //
-// 言語は起動時に端末の設定（iOSアプリではアプリごとの言語設定）から1回だけ決める。
-// 対応していない言語の端末では英語を表示する。
+// 初期状態（自動）では、端末の設定（iOSアプリではアプリごとの言語設定）から決める。
+// 対応していない言語の端末では英語を表示する。設定画面で言語を選ぶと、その言語を端末に保存して
+// すぐに画面へ反映する。lang / dateLocale / t は切り替えると値が変わるので、
+// 描画のたびに読み、モジュールの定数やメモ化した値に写さないこと。
 //
 // 言語を追加するときは次をそろえる（そろっていないと型検査か npm test が失敗する）:
-//   1. このフォルダに文言ファイル（ja.ts と同じ形）を作り、Lang と DICTIONARIES、matchLang に足す
+//   1. このフォルダに文言ファイル（ja.ts と同じ形）を作り、Lang と DICTIONARIES、LANGUAGE_NAMES、matchLang に足す
 //   2. ios/App/App/<言語>.lproj/InfoPlist.strings（アプリ名・ATTの説明文）を作り、Xcodeに追加する
 //   3. config.ts の URL_TERMS / URL_PRIVACY に表示するページを指定する
 //   4. ios/App/App/StampHabit.storekit と App Store Connect に製品の表示名を足す
@@ -21,6 +23,24 @@ import { zhHant } from './zh-Hant.js'
 
 export type { Messages }
 export type Lang = 'ja' | 'en' | 'zh-Hans' | 'zh-Hant' | 'ko' | 'es' | 'fr' | 'de' | 'pt-BR'
+/** 設定で選べる値。'auto' は端末の設定に合わせる。 */
+export type LangSetting = Lang | 'auto'
+
+/** 言語の選択肢に出す名前。どの表示言語からでも探せるよう、その言語自身の表記にする。 */
+export const LANGUAGE_NAMES: Record<Lang, string> = {
+  ja: '日本語',
+  en: 'English',
+  'zh-Hans': '简体中文',
+  'zh-Hant': '繁體中文',
+  ko: '한국어',
+  es: 'Español',
+  fr: 'Français',
+  de: 'Deutsch',
+  'pt-BR': 'Português (Brasil)',
+}
+
+/** 選んだ言語を保存するキー。記録データのバックアップには含めない（端末ごとの表示設定のため）。 */
+export const LANGUAGE_KEY = 'habit-stamp:lang'
 
 export const DICTIONARIES: Record<Lang, Messages> = {
   ja,
@@ -93,6 +113,57 @@ function preferredLanguages(): readonly string[] {
   return navigator.language ? [navigator.language] : []
 }
 
-export const lang: Lang = pickLang(preferredLanguages())
-export const dateLocale: string = pickLocale(preferredLanguages(), lang)
-export const t: Messages = DICTIONARIES[lang]
+function isLangSetting(value: unknown): value is LangSetting {
+  return value === 'auto' || (typeof value === 'string' && Object.prototype.hasOwnProperty.call(DICTIONARIES, value))
+}
+
+function readSetting(): LangSetting {
+  try {
+    const stored = localStorage.getItem(LANGUAGE_KEY)
+    return isLangSetting(stored) ? stored : 'auto'
+  } catch {
+    return 'auto'
+  }
+}
+
+let setting: LangSetting = readSetting()
+
+export let lang: Lang
+export let dateLocale: string
+export let t: Messages
+
+function apply(): void {
+  const preferred = preferredLanguages()
+  lang = setting === 'auto' ? pickLang(preferred) : setting
+  dateLocale = pickLocale(preferred, lang)
+  t = DICTIONARIES[lang]
+}
+apply()
+
+const listeners = new Set<() => void>()
+
+/** 言語が切り替わった時に呼ぶ処理を登録する。戻り値で解除する。 */
+export function subscribeLanguage(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+export function getLanguageSetting(): LangSetting {
+  return setting
+}
+
+/** 表示言語を切り替えて保存する。保存できなくても、起動中は選んだ言語で表示する。 */
+export function setLanguageSetting(next: LangSetting): void {
+  if (!isLangSetting(next)) return
+  setting = next
+  try {
+    if (next === 'auto') localStorage.removeItem(LANGUAGE_KEY)
+    else localStorage.setItem(LANGUAGE_KEY, next)
+  } catch {
+    // 保存できない環境でも切り替え自体は行う。
+  }
+  apply()
+  listeners.forEach((listener) => listener())
+}
