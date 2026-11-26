@@ -58,6 +58,6 @@ npx cap open ios
 
 ## SKAdNetwork について
 
-`Info.plist` の `SKAdNetworkItems` は、以前リポジトリに保存してあった一覧をそのまま入れています。
+`Info.plist` の `SKAdNetworkItems` は、Google公式の一覧（50件、2026-11-26確認）に合わせています。
 Googleは一覧を定期的に更新するため、提出前に
 [Google公式ドキュメント](https://developers.google.com/admob/ios/ios14)の最新の一覧と照合し、不足分を追加してください。
