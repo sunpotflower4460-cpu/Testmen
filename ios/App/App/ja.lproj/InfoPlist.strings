@@ -1,0 +1,3 @@
+/* ホーム画面のアプリ名と、ATT（トラッキング許可）ダイアログの文言 */
+"CFBundleDisplayName" = "スタンプ習慣";
+"NSUserTrackingUsageDescription" = "広告をあなたに合った内容にするため、トラッキングをお願いしています";

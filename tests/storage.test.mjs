@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { emptyData, loadData, parseImport, RECOVERY_KEY, saveData, STORAGE_KEY } from '../.test-dist/src/lib/storage.js'
+import { t } from '../.test-dist/src/lib/i18n/index.js'
 
 test('import normalizes malformed habits and records', () => {
   const data = parseImport(JSON.stringify({
@@ -25,7 +26,7 @@ test('import normalizes malformed habits and records', () => {
     { id: 'a', order: 0 },
     { id: 'b', order: 1 },
   ])
-  assert.equal(data.habits[0].title, '無題')
+  assert.equal(data.habits[0].title, t.untitled)
   assert.equal(data.habits[1].title, 'second')
   assert.equal(data.habits[1].colorId, 'vermilion')
   assert.deepEqual(data.records.a, ['2026-07-01', '2026-07-02'])
@@ -83,7 +84,7 @@ test('saveData reports both persistence success and failure', () => {
 })
 
 test('broken JSON is rejected with a user-facing message, and a BOM is tolerated', () => {
-  assert.throws(() => parseImport('{"habits": ['), { message: 'JSONファイルとして読み込めませんでした' })
+  assert.throws(() => parseImport('{"habits": ['), { message: t.importErrors.invalidJson })
   const data = parseImport('\uFEFF{"version":1,"habits":[],"records":{}}')
   assert.deepEqual(data.habits, [])
 })

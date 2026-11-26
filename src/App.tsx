@@ -8,7 +8,8 @@ import { HabitEditor } from './components/HabitEditor'
 import { SettingsSheet } from './components/SettingsSheet'
 import { AdBanner } from './components/AdBanner'
 import { Paywall } from './components/Paywall'
-import { formatLongJa } from './lib/date'
+import { formatLong } from './lib/date'
+import { t } from './lib/i18n'
 import { useDayKey } from './lib/useDayKey'
 import { nativeBootstrap } from './lib/nativeBootstrap'
 
@@ -33,7 +34,7 @@ export default function App() {
     [api.data.habits],
   )
 
-  const today = useMemo(() => formatLongJa(new Date()), [dayKey])
+  const today = useMemo(() => formatLong(new Date()), [dayKey])
 
   function openNew() {
     setEditing(null)
@@ -51,15 +52,15 @@ export default function App() {
         <div className="app-header__brand">
           <span className="app-header__logo" aria-hidden>㊡</span>
           <div>
-            <h1 className="app-header__title">スタンプ習慣</h1>
+            <h1 className="app-header__title">{t.appName}</h1>
             <p className="app-header__date">{today}</p>
           </div>
         </div>
         <button
           className="icon-btn"
           onClick={() => setShowSettings(true)}
-          aria-label="設定"
-          title="設定"
+          aria-label={t.header.settings}
+          title={t.header.settings}
         >
           ⚙
         </button>
@@ -67,7 +68,7 @@ export default function App() {
 
       {api.saveFailed && (
         <p className="save-error" role="alert">
-          記録を端末に保存できませんでした。空き容量を確認し、設定のエクスポートでバックアップしてください。
+          {t.saveError}
         </p>
       )}
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { t } from '../lib/i18n'
 
 interface Props {
   title: string
@@ -66,7 +67,7 @@ export function Sheet({ title, onClose, children }: Props) {
         <div className="sheet__grip" aria-hidden />
         <div className="sheet__head">
           <h2 className="sheet__title">{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="閉じる">
+          <button className="icon-btn" onClick={onClose} aria-label={t.close}>
             ✕
           </button>
         </div>

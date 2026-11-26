@@ -29,15 +29,17 @@ export const ADMOB_USE_TEST_ADS = true
 export const ADMOB_BANNER_UNIT_ID = ADMOB_USE_TEST_ADS ? ADMOB_BANNER_TEST : ADMOB_BANNER_PRODUCTION
 
 // ---- 法務・問い合わせ ----
-// Cloudflare で公開した静的ページのURL（末尾スラッシュ無し）に置き換え推奨
-export const URL_PRIVACY = './privacy.html'
-export const URL_TERMS = './terms.html'
+// 表示言語ごとのページ。Cloudflare で公開した静的ページのURL（末尾スラッシュ無し）に置き換え推奨
+export const URL_PRIVACY = { ja: './privacy.html', en: './privacy.en.html' } as const
+export const URL_TERMS = { ja: './terms.html', en: './terms.en.html' } as const
 export const CONTACT_EMAIL = 'sunpotflower4460@gmail.com'
 // App Store の数値ID（申請後に採番）。設定するとレビュー導線が有効化。
 export const APP_STORE_ID = ''
 
-// 価格表示（実際の課金額は App Store Connect の価格ティアに従います）
-export const PREMIUM_PRICE_LABEL = '¥300'
+// Web版プレビューでだけ使う価格表示。
+// iOSアプリでは App Store から取得した利用者の国の通貨で表示し、取得できるまで価格を出しません
+// （固定の金額を出すと、実際の請求額と食い違うため）。
+export const WEB_PREVIEW_PRICE_LABEL = '¥300'
 
 // アプリのバージョン表記（App Store のバージョンと揃える）
 export const APP_VERSION = '1.0'

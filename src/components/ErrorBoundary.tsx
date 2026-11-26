@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react'
 import { backupRawData, STORAGE_KEY } from '../lib/storage'
+import { t } from '../lib/i18n'
 
 interface Props {
   children: ReactNode
@@ -20,7 +21,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   reset = () => {
-    if (!confirm('記録をすべて消去して初期状態に戻します。よろしいですか？')) return
+    if (!confirm(t.crash.resetConfirm)) return
     try {
       // 念のため原文を退避してから消去する（上書きされるまで復旧の余地を残す）。
       backupRawData()
@@ -36,18 +37,18 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="crash">
           <div className="crash__stamp" aria-hidden>😵</div>
-          <h1 className="crash__title">問題が発生しました</h1>
+          <h1 className="crash__title">{t.crash.title}</h1>
           <p className="crash__text">
-            アプリの表示中にエラーが起きました。
+            {t.crash.lead}
             <br />
-            まずは再読み込みをお試しください。
+            {t.crash.body}
           </p>
           <div className="crash__actions">
             <button className="btn btn--primary" onClick={() => location.reload()}>
-              再読み込み
+              {t.crash.reload}
             </button>
             <button className="btn btn--danger-ghost" onClick={this.reset}>
-              データを初期化して復旧
+              {t.crash.reset}
             </button>
           </div>
         </div>

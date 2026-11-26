@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { isNative } from '../lib/platform'
+import { t } from '../lib/i18n'
 
 interface Props {
   href: string
@@ -67,7 +68,7 @@ function LegalViewer({ href, title, onClose }: { href: string; title: string; on
     <div className="legal" role="dialog" aria-modal="true" aria-label={title}>
       <div className="legal__head">
         <h2 className="legal__title">{title}</h2>
-        <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label="閉じる">
+        <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label={t.close}>
           ✕
         </button>
       </div>

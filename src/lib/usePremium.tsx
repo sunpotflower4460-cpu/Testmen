@@ -16,11 +16,14 @@ import {
   type PurchaseOutcome,
 } from './purchases'
 import { isNative } from './platform'
-import { MONETIZATION_ENABLED, PREMIUM_PRICE_LABEL } from './config'
+import { MONETIZATION_ENABLED, WEB_PREVIEW_PRICE_LABEL } from './config'
 
 interface PremiumState {
   premium: boolean
-  price: string
+  /** App Store の価格表示。まだ取得できていない場合は null */
+  price: string | null
+  /** 価格を取得できていない場合に取り直す */
+  refreshPrice: () => void
   loading: boolean
   isNative: boolean
   /** 広告・課金を提供しているか（config.ts の MONETIZATION_ENABLED） */
@@ -35,7 +38,7 @@ const Ctx = createContext<PremiumState | null>(null)
 
 export function PremiumProvider({ children }: { children: ReactNode }) {
   const [premium, setPremium] = useState(false)
-  const [price, setPrice] = useState(PREMIUM_PRICE_LABEL)
+  const [price, setPrice] = useState<string | null>(() => (isNative() ? null : WEB_PREVIEW_PRICE_LABEL))
   const [loading, setLoading] = useState(MONETIZATION_ENABLED)
 
   useEffect(() => {
@@ -52,7 +55,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
         if (alive) setLoading(false)
       }
       void getPremiumPrice().then((pr) => {
-        if (alive) setPrice(pr)
+        if (alive && pr) setPrice(pr)
       })
       const stop = await watchPremium((next) => {
         if (alive) setPremium(next)
@@ -64,6 +67,13 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       alive = false
       unwatch?.()
     }
+  }, [])
+
+  const refreshPrice = useCallback(() => {
+    if (!MONETIZATION_ENABLED) return
+    void getPremiumPrice().then((pr) => {
+      if (pr) setPrice(pr)
+    })
   }, [])
 
   const purchase = useCallback(async () => {
@@ -86,7 +96,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ premium, price, loading, isNative: isNative(), monetization: MONETIZATION_ENABLED, purchase, restore, resetDemo }}
+      value={{ premium, price, refreshPrice, loading, isNative: isNative(), monetization: MONETIZATION_ENABLED, purchase, restore, resetDemo }}
     >
       {children}
     </Ctx.Provider>

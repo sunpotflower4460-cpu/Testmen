@@ -1,6 +1,6 @@
 import { registerPlugin, type PluginListenerHandle } from '@capacitor/core'
 import { isNative } from './platform'
-import { PRODUCT_REMOVE_ADS, PREMIUM_PRICE_LABEL } from './config'
+import { PRODUCT_REMOVE_ADS, WEB_PREVIEW_PRICE_LABEL } from './config'
 
 // ネイティブ実装: ios/App/App/StampPurchasesPlugin.swift（StoreKit 2）
 export type PurchaseOutcome = 'success' | 'cancelled' | 'pending' | 'error'
@@ -54,15 +54,15 @@ export async function checkPremium(): Promise<boolean> {
   }
 }
 
-/** App Store から取得したローカライズ済み価格。取得できない場合は既定の表記。 */
-export async function getPremiumPrice(): Promise<string> {
-  if (!isNative()) return PREMIUM_PRICE_LABEL
+/** App Store から取得した、利用者の国の通貨での価格。取得できない場合は null。 */
+export async function getPremiumPrice(): Promise<string | null> {
+  if (!isNative()) return WEB_PREVIEW_PRICE_LABEL
   try {
     const product = await StampPurchases.getProduct(options)
-    return product.found && product.displayPrice ? product.displayPrice : PREMIUM_PRICE_LABEL
+    return product.found && product.displayPrice ? product.displayPrice : null
   } catch (error) {
     console.warn('getPremiumPrice failed', error)
-    return PREMIUM_PRICE_LABEL
+    return null
   }
 }
 
