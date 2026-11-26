@@ -25,7 +25,7 @@ export function TodayView({ habits, api, onAdd, onEdit }: Props) {
   if (total === 0) {
     return (
       <div className="empty">
-        <div className="empty__stamp" aria-hidden>㊡</div>
+        <div className="empty__stamp" aria-hidden>㊞</div>
         <h2 className="empty__title">{t.today.emptyTitle}</h2>
         <p className="empty__text">
           {t.today.emptyLead}<br />

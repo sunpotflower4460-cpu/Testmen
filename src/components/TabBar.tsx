@@ -16,7 +16,7 @@ export function TabBar({ tab, onChange, onAdd }: Props) {
         onClick={() => onChange('today')}
         aria-current={tab === 'today' ? 'page' : undefined}
       >
-        <span className="tabbar__icon" aria-hidden>㊡</span>
+        <span className="tabbar__icon" aria-hidden>㊞</span>
         <span className="tabbar__label">{t.tabs.today}</span>
       </button>
 
