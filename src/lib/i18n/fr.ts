@@ -108,7 +108,7 @@ export const fr: Messages = {
     featureNoAds: 'Masque toutes les publicités',
     featureFocus: 'Un écran épuré pour rester concentré',
     featureSupport: 'Vous soutenez le développement',
-    oneTime: 'Achat unique · aucun autre frais',
+    oneTime: 'Achat unique · sans autres frais',
     owned: '✓ Acheté. Merci\u202f!',
     processing: 'Traitement…',
     checking: 'Vérification…',
