@@ -14,7 +14,10 @@ const config: CapacitorConfig = {
     '@capacitor-community/admob',
   ],
   ios: {
-    contentInset: 'always',
+    // 画面端の余白は CSS の env(safe-area-inset-*) で確保している。'always' にすると
+    // WebView側でも余白が入って二重になり、画面の下（キーボードを閉じた後は上）に白い帯が出る。
+    // この値を変えたら npx cap sync ios を実行すること。
+    contentInset: 'never',
   },
 }
 

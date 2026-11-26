@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Habit } from '../lib/types'
 import type { AppApi } from '../lib/useAppData'
 import { EMOJI_CHOICES, INK_COLORS, DEFAULT_COLOR_ID, getColor } from '../lib/palette'
@@ -18,6 +18,14 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
   const [emoji, setEmoji] = useState(habit?.emoji ?? EMOJI_CHOICES[0])
   const [colorId, setColorId] = useState(habit?.colorId ?? DEFAULT_COLOR_ID)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const titleRef = useRef<HTMLInputElement>(null)
+
+  // シートがせり上がる途中でフォーカスすると、iOSがキーボードを避けるスクロール量を誤り、
+  // 入力欄が画面の外へ出る。アニメーション（.sheet__panel の 0.34s）が終わってからフォーカスする。
+  useEffect(() => {
+    const timer = window.setTimeout(() => titleRef.current?.focus(), 400)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     setTitle(habit?.title ?? '')
@@ -72,13 +80,13 @@ export function HabitEditor({ habit, habits, api, onClose }: Props) {
         <label className="field">
           <span className="field__label">続けたいこと</span>
           <input
+            ref={titleRef}
             className="field__input"
             type="text"
             value={title}
             maxLength={24}
             placeholder="例）本を10分読む"
             onChange={(event) => setTitle(event.target.value)}
-            autoFocus
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.nativeEvent.isComposing) save()
             }}
