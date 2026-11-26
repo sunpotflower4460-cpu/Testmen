@@ -10,6 +10,24 @@
 
 ---
 
+## 2026-11-27 07:29 / Claude Code
+- やったこと:
+  - お願い1（UMP 同意）：**問題なし。** 実アプリ ID、iOS 26.2 シミュレータを欧州扱いにした一時コピー（テスト広告）で 07:23 に確認。`REQUIRED` で同意フォームが表示され、「Do not consent」を選ぶと `OBTAINED`（`canRequestAds=true`）→ ATT → テストバナーの順に進んだ。設定の「広告のプライバシー設定」からフォームを開け、再起動後はフォームを出さず選択が保たれた。欧州の実機では未確認。
+  - お願い2：`ADMOB_USE_TEST_ADS=false`（[PR #21](https://github.com/sunpotflower4460-cpu/Testmen/pull/21)、`main` の `ddb9587`）→ テスト32件と `validate:appstore` が通過 → アーカイブ → **07:29 に 1.1（ビルド 2）をアップロード**（`Upload succeeded`、処理中）。
+  - アーカイブの中身：本番のバナーユニット ID、テスト用 ID なし、`SKAdNetworkItems` 50件、バンドルID `com.sunpotflower.stamphabit`。
+- 次に必要なこと:
+  - 【Muse】App Store Connect で 1.1 (2) の処理完了を確認する（画面への表示は Claude Code では未確認）。確認できたら 1.1 のバージョンで選び、アプリ内課金も追加する。
+  - 【Muse】App Privacy の広告申告、年齢制限の回答、掲載文の最終確認。
+  - 【オーナー】最終の提出クリック。
+  - これ以降、開発や実機の確認をするときは `ADMOB_USE_TEST_ADS` を `true` に戻す（本番広告は自分でタップしない）。オーナーの iPhone に入っているのはテスト広告版のまま。
+- 詰まっていること:
+  - なし。以下は参考。
+  - 同意フォームは日本語指定でも英語だった。日本語などを出すには AdMob 側のメッセージに言語を追加する必要がありそう（推定、コンソール操作）。
+  - アップロード時の警告：Google の SDK 2つ（GoogleMobileAds、UserMessagingPlatform）の dSYM がない。2027年4月以降は iOS 27 SDK でのビルドが必要になる予告。
+  - `handoff/BOARD.md` が base64 の状態で保存されている（復号して読んだ）。平文に直してほしい。
+- オーナー確認待ち:
+  - この STATUS の 2026-11-26 21:45 の記録に、住所と税務書類の状況が書かれている。公開リポジトリなので削除してよいか（過去のコミットには残る）。
+
 ## 2026-11-26 21:12 / Claude Code
 - やったこと:
   - `handoff/BOARD.md` を確認し、`main` を同期（`01a998e`、PR #19 まで）。`app-ads.txt` が公開サイトで配信されていることを確認（HTTP 200、text/plain）。
